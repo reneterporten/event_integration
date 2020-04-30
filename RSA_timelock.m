@@ -18,7 +18,7 @@ subjects = {'sub-004','sub-005','sub-006','sub-007','sub-008','sub-009',...
 
 %% Load in timelock data and apply spatial/temporal searchlight
 
-for iSubject = 1:1%length(subjects)
+for iSubject = 1:length(subjects)
     
     % Load Data
     subj                = subjects{iSubject};
@@ -39,11 +39,11 @@ for iSubject = 1:1%length(subjects)
     cfg.timewidth       = 0.200; % Width of shifting timewindow
     cfg.timesteps       = 0.050; % Steps of shifting timewindow
     cfg.neighbours      = neighbours;
-    cfg.searchspace     = 'yes';
-    cfg.searchtime      = 'yes';
-    cfg.avgovertrials   = 'yes';
-    cfg.avgovertime     = 'no';
-    cfg.avgoverspace    = 'no';
+    cfg.searchspace     = 'yes'; % Not included in rt_searchlight yet
+    cfg.searchtime      = 'yes'; % Not included in rt_searchlight yet
+    cfg.avgovertrials   = 'yes'; % Not included in rt_searchlight yet
+    cfg.avgovertime     = 'no'; % Not included in rt_searchlight yet
+    cfg.avgoverspace    = 'no'; % Not included in rt_searchlight yet
     sl_data_pre         = rt_searchlight(cfg, my_data);
        
 end
@@ -54,6 +54,7 @@ keep iSubject subjects root_dir save_dir cfgdata sl_data_pre my_data
 %% Create prediction RDM and compare to neural RDM
 
 my_template     = [NaN, -1, 1; -1, NaN, 1; 1, 1, NaN];
+% Create prediction RDM that matches trial x trial structure of data
 predictionRDM   = rt_predictionRDM(my_template, my_data);
 neuralRDM       = sl_data_pre.searchlight;
 
@@ -64,7 +65,9 @@ for nrChan = 1:size(neuralRDM, 1)
     for nrTimewin = 1:size(neuralRDM, 2)
 
         currentNeural               = squeeze(neuralRDM(nrChan, nrTimewin, :, :));
-        currentNeural               = vectorizeSimmat(currentNeural); 
+        currentNeural               = vectorizeSimmat(currentNeural);
+        % dataRSA is the resulting structure containing chan x timewindow
+        % information
         dataRSA(nrChan, nrTimewin)  = corr(predictionRDM_vec', currentNeural', 'Type', 'Kendall', 'Rows', 'complete');
 
     end

@@ -12,7 +12,8 @@ avgovertrials   = cfgdata.avgovertrials;
 avgovertime     = cfgdata.avgovertime;
 avgoverspace    = cfgdata.avgoverspace;
 
-% Default check values for the data
+% Default check values for the data. Will be true if requested timestep do
+% not match temporal frequency of the data
 timestep_warning = false;
 
 % Calculate timewindow that can be fitted to the actual data
@@ -39,7 +40,8 @@ req_timewidth       = min_time + timewidth;
 use_timewidthidx    = idx - 1; % Index by which the timewindow needs to shift to match requested timestep  
 
 % Calculate number of time windows that fit the data
-% I have to rethink how to calculate max number of timewindows in data
+% These steps can be adjusted such that the fit of the last timewindow is
+% set to some threshold. (e.g. include timewindow if 90% of data is preserved)
 window_counter = 0;
 for window_fit_vec = 1:use_timestepsidx:length(data{1,1}.time) 
     if (window_fit_vec + use_timewidthidx) <= length(data{1,1}.time)
@@ -70,6 +72,8 @@ for idxLabel = 1:length(data{1,1}.label)
     data_search = [];
     time_search = [];
     disp('Extracting data per timewindow.')
+    % For each channel and its including neighbours loop through time
+    % windows
     for timewindow_nr = 1:1%window_counter
         
         disp(strcat('Calculating timewindow:', int2str(timewindow_nr)))
@@ -85,9 +89,13 @@ for idxLabel = 1:length(data{1,1}.label)
         end
 
         % Do comparison of trial x trials
+        % The trial structure is derived from the rows of data_search
+        % data_search includes trial x channels(incl neighbours) x time
         temp_comp = zeros(size(data_search, 1), size(data_search, 1));
         for rowData = 1:size(data_search, 1)
             for colData = 1:size(data_search, 1)
+                % This results in a symmetrical trial x trial matrix for
+                % this particular channel & timewindow combination
                 temp_comp(rowData, colData) = corr2(squeeze(data_search(rowData, :, :)), squeeze(data_search(colData, :, :)));
             end   
         end
