@@ -36,8 +36,8 @@ for iSubject = 1:length(subjects)
     
     % Apply searchlight function
     cfg                 = [];
-    cfg.timewidth       = 0.200; % Width of shifting timewindow
-    cfg.timesteps       = 0.050; % Steps of shifting timewindow
+    cfg.timewidth       = 0.750; % Width of shifting timewindow
+    cfg.timesteps       = 0.400; % Steps of shifting timewindow
     cfg.neighbours      = neighbours;
     cfg.searchspace     = 'yes'; % Not included in rt_searchlight yet
     cfg.searchtime      = 'yes'; % Not included in rt_searchlight yet
@@ -48,15 +48,19 @@ for iSubject = 1:length(subjects)
        
 end
 
-keep iSubject subjects root_dir save_dir cfgdata sl_data_pre my_data
+keep iSubject subjects root_dir save_dir cfgdata sl_data_pre my_data data
+
+save(fullfile('/project/3012026.13/processed_RT/', 'searchlight_test2.mat'), 'sl_data', '-v7.3')
 
 
 %% Create prediction RDM and compare to neural RDM
 
-my_template     = [NaN, -1, 1; -1, NaN, 1; 1, 1, NaN];
+predata     = xlsread('/project/3012026.13/scripts_RT/prediction_pre_noBX.xlsx');
+postdata    = xlsread('/project/3012026.13/scripts_RT/prediction_post_noBX.xlsx');
+sanitydata  = xlsread('/project/3012026.13/scripts_RT/sanity_pre.xlsx');
 % Create prediction RDM that matches trial x trial structure of data
-predictionRDM   = rt_predictionRDM(my_template, my_data);
-neuralRDM       = sl_data_pre.searchlight;
+predictionRDM   = rt_predictionRDMxlsx(predata, postdata);
+neuralRDM       = sl_data.searchlight;
 
 predictionRDM_vec   = vectorizeSimmat(predictionRDM);
 dataRSA             = zeros(size(neuralRDM,1), size(neuralRDM,2));
@@ -73,10 +77,33 @@ for nrChan = 1:size(neuralRDM, 1)
     end
 end
 
+% Integrate data from RSA into structure that is intepretable by fieldtrip
+cfg                 = [];
+cfg.avgoverrpt      = 'yes';
+cfg.avgovertime     = 'yes';
+sl_data_test        = ft_selectdata(cfg, my_data{1});
+sl_data_test.trial  = dataRSA(:,4);
+
+% Plot the data onto topography
+cfg                 = [];
+cfg.zlim            = [-0.06 0.06]; 
+cfg.layout          = 'CTF275_helmet.mat';
+cfg.parameter       = 'trial';
+cfg.comment         = 'no';
+figure; ft_topoplotER(cfg,sl_data_test); colorbar
+set(gcf,'color','w')
+
+ft_hastoolbox('brewermap', 1);         
+colormap(flipud(brewermap(64,'RdBu'))) 
+
+% Plot channel x timewindow data
+imagesc(dataRSA, [-0.06 0.06])
+set(gcf,'color','w')
+colormap(flipud(brewermap(64,'RdBu'))) 
 
 
 
 
 
-
+load(fullfile('/project/3012026.13/processed_RT/', 'searchlight_test.mat'))
 

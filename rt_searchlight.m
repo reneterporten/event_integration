@@ -74,11 +74,12 @@ for idxLabel = 1:length(data{1,1}.label)
     disp('Extracting data per timewindow.')
     % For each channel and its including neighbours loop through time
     % windows
-    for timewindow_nr = 1:1%window_counter
+    for timewindow_nr = 1:window_counter
         
         disp(strcat('Calculating timewindow:', int2str(timewindow_nr)))
         
         % Create Trial structure including all conditions
+        %tic
         startTrial = 0;
         for condNr = 1:size(data_trial, 1)
             for nrTrial = 1:data_trial(condNr)
@@ -87,18 +88,29 @@ for idxLabel = 1:length(data{1,1}.label)
             end
             startTrial = startTrial + data_trial(condNr);
         end
+        %stopWatch = toc;
+        %disp(strcat('Time to create trial structure: ', num2str(stopWatch)))
 
         % Do comparison of trial x trials
         % The trial structure is derived from the rows of data_search
         % data_search includes trial x channels(incl neighbours) x time
+        tic
         temp_comp = zeros(size(data_search, 1), size(data_search, 1));
         for rowData = 1:size(data_search, 1)
+            %disp(strcat('Calculating Row:', int2str(rowData)))
             for colData = 1:size(data_search, 1)
                 % This results in a symmetrical trial x trial matrix for
                 % this particular channel & timewindow combination
+
+                %currentRow                  = squeeze(data_search(rowData, :, :));
+                %currentCol                  = squeeze(data_search(colData, :, :));
+                %currentCorr                 = corr(currentRow, currentCol, 'Type', 'Kendall', 'Rows', 'complete');
+                %temp_comp(rowData, colData) = mean(diag(currentCorr));
                 temp_comp(rowData, colData) = corr2(squeeze(data_search(rowData, :, :)), squeeze(data_search(colData, :, :)));
             end   
         end
+        stopWatch = toc;
+        disp(strcat('Time to correlate matrices: ', num2str(stopWatch)))
         
         % Store temporary data of trial comparison to matrix
         resulting_data.searchlight(idxLabel, timewindow_nr, :, :) = temp_comp;
