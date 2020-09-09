@@ -99,15 +99,16 @@ end
 sanitydata      = xlsread('/project/3012026.13/scripts_RT/sanity_pre.xlsx'); % Visual similarity
 %Create prediction RDM that matches trial x trial structure of data
 cfg             = [];
-cfg.offdiag     = false; % Use postdata structure for off diagional (phase comparison)
+cfg.offdiag     = true; % Use postdata structure for off diagional (phase comparison)
 predictionRDM   = rt_predictionRDMxlsx(cfg, sanitydata, sanitydata);
-%predictionRDM(isnan(predictionRDM)) = -1; % Use -1 instead of NaN for visual similarity
+predictionRDM(isnan(predictionRDM)) = -1; % Use -1 instead of NaN for visual similarity
 
 predictionRDM_vec   = vectorizeSimmat(predictionRDM);
 dataRSA             = [];
 dataRSA.RSM         = zeros(size(resulting_data.searchlight,1), size(resulting_data.searchlight,2));
 dataRSA.parcels     = allParcels;
 
+tic
 for nrChan = 1:size(resulting_data.searchlight, 1)
     disp(strcat('Calculating Channel:', int2str(nrChan)))
     for nrTimewin = 1:size(resulting_data.searchlight, 2)
@@ -116,10 +117,11 @@ for nrChan = 1:size(resulting_data.searchlight, 1)
         currentNeural               = vectorizeSimmat(currentNeural);
         % dataRSA is the resulting structure containing chan x timewindow
         % information
-        dataRSA.RSM(nrChan, nrTimewin)  = corr(predictionRDM_vec', currentNeural', 'Type', 'Kendall', 'Rows', 'complete');
+        dataRSA.RSM(nrChan, nrTimewin)  = corr(predictionRDM_vec', currentNeural', 'Type', 'Spearman', 'Rows', 'complete');
 
     end
 end
+toc
 
 
 

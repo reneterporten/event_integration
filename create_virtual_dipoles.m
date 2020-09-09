@@ -17,47 +17,63 @@ subjects = {'sub-004','sub-005','sub-006','sub-007','sub-008','sub-009',...
     'sub-032','sub-033','sub-034','sub-035','sub-036','sub-037','sub-038'};
 
 
+%% Estimate covariance
+
+% Estimate covariance per subject
+for covsub = 1:10
+    qsubfeval('rt_mytimelock_cov', root_dir, subjects{covsub}, 'memreq', 12*1024^3, 'timreq', 24*60, 'batchid', subjects{covsub});
+end
+
+
 %% Source analysis - Create spatial filters based on the whole data
 
-load(fullfile(save_dir, subjects{2}, 'headmodel.mat'), 'headmodel')
-load(fullfile(save_dir, subjects{2}, 'grid.mat'), 'grid')
+for sourcesub = 1:10
+    
+    disp(strcat('Calculating general filter: ', int2str(sourcesub)))
+    disp('Loading...')
+  
+    load(fullfile(save_dir, subjects{sourcesub}, 'headmodel.mat'), 'headmodel')
+    load(fullfile(save_dir, subjects{sourcesub}, 'grid.mat'), 'grid')
+    load(fullfile(save_dir, subjects{sourcesub}, 'tlck_filter.mat'), 'tlck')
 
-% Load Data
-tlck = rt_mytimelock_cov(root_dir, subjects{2});
+    [u,s,v] = svd(tlck.cov);
+    d       = -diff(log10(diag(s)));
+    d       = d./std(d);
+    kappa   = find(d>5,1,'first');
 
-[u,s,v] = svd(tlck.cov);
-d       = -diff(log10(diag(s)));
-d       = d./std(d);
-kappa   = find(d>5,1,'first');
+    %figure;
+    %semilogy(diag(s),'o-');
 
-figure;
-semilogy(diag(s),'o-');
+    cfg             = [];
+    cfg.grid        = grid;
+    cfg.headmodel   = headmodel;
+    cfg.channel     = {'MEG'};
+    cfg.grad        = tlck.grad;
+    sourcemodel_lf  = ft_prepare_leadfield(cfg, tlck);
 
-cfg             = [];
-cfg.grid        = grid;
-cfg.headmodel   = headmodel;
-cfg.channel     = {'MEG'};
-cfg.grad        = tlck.grad;
-sourcemodel_lf  = ft_prepare_leadfield(cfg, tlck);
+     % Engange the source analysis for specified ROIs only
+    cfg                     = [];
+    cfg.method              = 'lcmv';
+    cfg.grad                = tlck.grad;
+    cfg.lcmv.kappa          = kappa;
+    cfg.lcmv.keepfilter     = 'yes';
+    cfg.lcmv.fixedori       = 'yes';
+    cfg.lcmv.weightnorm     = 'unitnoisegain';
+    cfg.lcmv.lambda         = '5%';
+    cfg.lcmv.kurtosis       = 'yes';
+    cfg.headmodel           = headmodel;
+    cfg.sourcemodel         = sourcemodel_lf;
+    source                  = ft_sourceanalysis(cfg, tlck);
+    
+    save(fullfile(save_dir, subjects{sourcesub}, 'source_filter.mat'), 'source')
+    clear source sourcemodel_lf tlck headmodel grid
 
- % Engange the source analysis for specified ROIs only
-cfg                     = [];
-cfg.method              = 'lcmv';
-cfg.grad                = tlck.grad;
-cfg.lcmv.kappa          = kappa;
-cfg.lcmv.keepfilter     = 'yes';
-cfg.lcmv.fixedori       = 'yes';
-cfg.lcmv.weightnorm     = 'unitnoisegain';
-cfg.lcmv.lambda         = '5%';
-cfg.lcmv.kurtosis       = 'yes';
-cfg.headmodel           = headmodel;
-cfg.sourcemodel         = sourcemodel_lf;
-source                  = ft_sourceanalysis(cfg, tlck);
+end
 
 
 %% Plotting the kurtosis (the spikeness of the data)
 
-load(fullfile(save_dir, subjects{2}, 'alignedmri.mat'), 'mri')
+load(fullfile(save_dir, subjects{3}, 'alignedmri.mat'), 'mri')
 
 cfg                 = [];
 cfg.parameter       = 'kurtosis';
@@ -71,57 +87,103 @@ figure;ft_sourceplot(cfg, source_interp);
 clear source_interp
 
 
+%% Calculate timelocked data for all stories
+
+for tlcksub = 1:10
+    qsubfeval('rt_mytimelock_cov2', root_dir, subjects{tlcksub}, 'memreq', 40*1024^3, 'timreq', 40*60, 'batchid', subjects{tlcksub});
+end
+
+
 %% Apply general filter to sensor data
 
-% Load Data
-subj                = subjects{2};
-% Apply timelock analysis
-my_data             = rt_mytimelock_cov2(root_dir, subj);
-
-filterDataStory = cell(length(my_data)*length(my_data{1}.trialinfo),1);
-running_idx     = 1;
-for stor = 1:length(my_data)
+ignoreSubs = [4 10 12 20];
+for virtsub = 4:10
     
-    disp(strcat('Story:', int2str(stor)))
-    
-    my_data_sel         = my_data{stor};
+    if ~ismember(virtsub, ignoreSubs)
+        
+        disp(strcat('Calculating general filter: ', int2str(virtsub)))
+        disp('Loading...')
 
-    % First create a data structure that can store all filter data per
-    % location x channel coefficients. 
-    filterData  = zeros(size(source.pos, 1), numel(my_data_sel.label));
+        load(fullfile(save_dir, subjects{virtsub}, 'tlck_structure.mat'), 'my_data')
+        load(fullfile(save_dir, subjects{virtsub}, 'source_filter.mat'), 'source')
 
-    % Subsequently take the filter data and store them in the pre-allocated
-    % variable.
-    filterData(source.inside,:) = cat(1,source.avg.filter{:});
+        filterDataStory = cell(length(my_data)*length(my_data{1}.trialinfo),1);
+        running_idx     = 1;
+        for stor = 1:length(my_data)
+
+            disp(strcat('Cond.:', int2str(stor)))
+
+            my_data_sel         = my_data{stor};
+
+            % First create a data structure that can store all filter data per
+            % location x channel coefficients. 
+            filterData  = zeros(size(source.pos, 1), numel(my_data_sel.label));
+
+            % Subsequently take the filter data and store them in the pre-allocated
+            % variable.
+            filterData(source.inside,:) = cat(1,source.avg.filter{:});
+
+            for trials = 1:size(my_data_sel.trialinfo,1)
+                % In order to obtain per location the dipole level fourier data, I multiply
+                % the sensor timelocked data with the spatial filter obtained from the source
+                % analysis.
+                filterDataTrial                 = filterData*squeeze(my_data_sel.trial(trials,:,:));
+                filterDataStory{running_idx}    = filterDataTrial;
+                running_idx                     = running_idx + 1;
+            end
+
+        end
+
+        % Call the source RSA function
+        % Needs filterDataStory & my_data from create_virtual_dipoles.m
+
+        load(fullfile(save_dir, 'atlas_grid.mat'), 'atlas_grid')
+
+        % Apply searchlight function
+        cfg                 = [];
+        cfg.timewidth       = 0.250; % Width of shifting timewindow
+        cfg.timesteps       = 0.125; % Steps of shifting timewindow
+        cfg.time            = my_data{1}.time;
+        cfg.atlas           = atlas_grid;
+        cfg.parcelrm        = []; % These parcels for L and R hemisphere & medial wall are removed
+        cfg.searchspace     = 'yes'; % Not included in rt_searchlight yet
+        cfg.searchtime      = 'yes'; % Not included in rt_searchlight yet
+        cfg.avgovertrials   = 'yes'; % Not included in rt_searchlight yet
+        cfg.avgovertime     = 'no'; % Not included in rt_searchlight yet
+        cfg.avgoverspace    = 'no'; % Not included in rt_searchlight yet
+        dataRSA             = rt_sourcersa(cfg, filterDataStory);
+
+        save(fullfile('/project/3012026.13/processed_RT/source reconstruction/', subjects{virtsub}, 'dataRSA.mat'), 'dataRSA')
+
+        clear filterDataStory my_data_sel my_data filterData filterDataTrial atlas_grid cfg dataRSA
     
-    for trials = 1:length(my_data_sel.trialinfo)
-        % In order to obtain per location the dipole level fourier data, I multiply
-        % the sensor timelocked data with the spatial filter obtained from the source
-        % analysis.
-        filterDataTrial                 = filterData*squeeze(my_data_sel.trial(trials,:,:));
-        filterDataStory{running_idx}    = filterDataTrial;
-        running_idx                     = running_idx + 1;
     end
-    
+
 end
 
 
 %% Prepare atlas alignment
 
-load(fullfile(save_dir, subjects{1}, 'grid.mat'), 'grid')
+ftpath   = '/home/common/matlab/fieldtrip'; % this is the path to FieldTrip at Donders
+load(fullfile(ftpath, 'template/sourcemodel/standard_sourcemodel3d7point5mm'));
+%load(fullfile(ftpath, 'template/sourcemodel/standard_sourcemodel3d4mm'));
+template_grid = sourcemodel;
+clear sourcemodel;
 
-atlas = ft_read_atlas('/project/3012026.13/scripts_RT/atlas_subparc374avg_volumetric.mat');
-atlas = ft_convert_units(atlas, 'mm');
+template_grid = ft_convert_units(template_grid, 'mm');
+
+atlas = ft_read_atlas('/home/common/matlab/fieldtrip/template/atlas/brainnetome/BNA_MPM_thr25_1.25mm.nii');
+atlas = ft_convert_coordsys(atlas, 'ctf');
 
 % The parcellation of the volumetric atlas gets interpolated onto the
 % subject specific sourcemodel (grid)
 cfg                         = [];
 cfg.interpmethod            = 'nearest';
-cfg.parameter               = 'parcellation';
-atlas_grid                  = ft_sourceinterpolate(cfg, atlas, grid);
-atlas_grid.parcellation1D   = atlas_grid.parcellation(:);
+cfg.parameter               = 'tissue';
+atlas_grid                  = ft_sourceinterpolate(cfg, atlas, template_grid);
+atlas_grid.parcellation1D   = atlas_grid.tissue(:);
 
-save(fullfile(save_dir, subjects{1}, 'atlas_grid.mat'), 'atlas_grid')
+save(fullfile(save_dir, 'atlas_grid.mat'), 'atlas_grid')
 
 
 %% Calculate number of grid points for each parcel

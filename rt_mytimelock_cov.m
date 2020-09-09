@@ -1,4 +1,4 @@
-function [tlck] = rt_mytimelock(root_dir, subj)
+function [tlck] = rt_mytimelock_cov(root_dir, subj)
 
 load(fullfile(root_dir, [subj,'_dataclean.mat']));
 
@@ -26,3 +26,5 @@ tlck            = ft_timelockanalysis(cfg, dataclean);
 cfg             = [];
 cfg.latency     = [0 2.0];
 tlck            = ft_selectdata(cfg,tlck);
+
+save(fullfile('/project/3012026.13/processed_RT/source reconstruction/', subj, 'tlck_filter.mat'), 'tlck')

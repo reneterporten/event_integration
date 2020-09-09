@@ -1,4 +1,4 @@
-function [my_data] = rt_mytimelock(root_dir, subj)
+function [my_data] = rt_mytimelock_cov2(root_dir, subj)
 
 load(fullfile(root_dir, [subj,'_dataclean.mat']));
 
@@ -154,3 +154,7 @@ for storEntries2 = 1:size(erp_story_pre,1)
     storCounterX = storCounterX + 3;
     
 end
+
+disp('Saving larger data structure...')
+save(fullfile('/project/3012026.13/processed_RT/source reconstruction/', subj, 'tlck_structure.mat'), 'my_data', '-v7.3')
+disp('Done.')

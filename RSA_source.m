@@ -18,7 +18,7 @@ subjects = {'sub-004','sub-005','sub-006','sub-007','sub-008','sub-009',...
 
 % Needs filterDataStory & my_data from create_virtual_dipoles.m
 
-load(fullfile(save_dir, subjects{2}, 'atlas_grid.mat'), 'atlas_grid')
+load(fullfile(save_dir, 'atlas_grid.mat'), 'atlas_grid')
 
 % Apply searchlight function
 cfg                 = [];
@@ -26,7 +26,7 @@ cfg.timewidth       = 0.250; % Width of shifting timewindow
 cfg.timesteps       = 0.125; % Steps of shifting timewindow
 cfg.time            = my_data{1}.time;
 cfg.atlas           = atlas_grid;
-cfg.parcelrm        = [1, 2, 188, 189]; % These parcels for L and R hemisphere & medial wall are removed
+cfg.parcelrm        = []; % These parcels for L and R hemisphere & medial wall are removed
 cfg.searchspace     = 'yes'; % Not included in rt_searchlight yet
 cfg.searchtime      = 'yes'; % Not included in rt_searchlight yet
 cfg.avgovertrials   = 'yes'; % Not included in rt_searchlight yet
@@ -34,7 +34,7 @@ cfg.avgovertime     = 'no'; % Not included in rt_searchlight yet
 cfg.avgoverspace    = 'no'; % Not included in rt_searchlight yet
 dataRSA             = rt_sourcersa(cfg, filterDataStory);
         
-save(fullfile(save_dir, subjects{2}, 'dataRSA.mat'), 'dataRSA')
+save(fullfile(save_dir, subjects{3}, 'dataRSA.mat'), 'dataRSA')
 
 
 %% Create source structure based on RSA data
@@ -43,7 +43,7 @@ ftpath   = '/home/common/matlab/fieldtrip'; % this is the path to FieldTrip at D
 load(fullfile(ftpath, 'template/sourcemodel/standard_sourcemodel3d7point5mm'));
 template_grid = sourcemodel;
 clear sourcemodel;
-load(fullfile(save_dir, subjects{2}, 'atlas_grid.mat'), 'atlas_grid')
+load(fullfile(save_dir, 'atlas_grid.mat'), 'atlas_grid')
 
 rsaparcellation = nan(length(atlas_grid.parcellation1D),size(dataRSA.RSM, 2));
 
@@ -65,7 +65,7 @@ source_rsa.pos = source.pos;
 
 %% Source plot
 
-load(fullfile(save_dir, subjects{2}, 'alignedmri.mat'), 'mri')
+load(fullfile(save_dir, subjects{3}, 'alignedmri.mat'), 'mri')
 %mri = ft_read_mri('/home/common/matlab/fieldtrip/template/anatomy/single_subj_T1.nii');
 
 cfg                         = [];
@@ -79,18 +79,18 @@ source_rsaNorm.rsaparcellation(source_rsaNorm.rsaparcellation == 0) = NaN;
 
 % plot multiple 2D axial slices
 cfg = [];
-cfg.method        = 'surface';
+cfg.method        = 'slice';
 cfg.funparameter  = 'rsaparcellation';
 cfg.maskparameter = cfg.funparameter;
-%cfg.funcolorlim   = [0.0 1.2];
+cfg.funcolorlim   = [0 0.08];
 %cfg.opacitylim    = [0.0 1.2];
 cfg.opacitymap    = 'rampup';
 cfg.camlight       = 'no';
 figure;ft_sourceplot(cfg, source_rsaNorm);
 set(gcf,'color','w')
 ft_hastoolbox('brewermap', 1);         
-colormap(flipud(brewermap(64,'RdBu')))
-view([-20 30])
+colormap(brewermap(64,'OrRd'))
+%view([-20 30])
 
 
 %% Create channel X timewindow plot
@@ -106,7 +106,7 @@ colormap(flipud(brewermap(64,'RdBu')))
 
 %% Create line plot with channel x timewindow trial data
 
-meanLine = std(dataRSA.RSM,1);
+meanLine = mean(dataRSA.RSM,1);
 timeRSM = [1:1:15];
 
 figure('Renderer', 'painters', 'Position', [10 10 500 200])
