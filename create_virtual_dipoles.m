@@ -41,14 +41,15 @@ for sourcesub = 1:10
     d       = d./std(d);
     kappa   = find(d>5,1,'first');
 
-    %figure;
-    %semilogy(diag(s),'o-');
+    figure;
+    semilogy(diag(s),'o-');
 
     cfg             = [];
     cfg.grid        = grid;
     cfg.headmodel   = headmodel;
     cfg.channel     = {'MEG'};
     cfg.grad        = tlck.grad;
+    cfg.normalize   = 'yes';
     sourcemodel_lf  = ft_prepare_leadfield(cfg, tlck);
 
      % Engange the source analysis for specified ROIs only
@@ -73,14 +74,17 @@ end
 
 %% Plotting the kurtosis (the spikeness of the data)
 
-load(fullfile(save_dir, subjects{3}, 'alignedmri.mat'), 'mri')
+load(fullfile(save_dir, subjects{1}, 'alignedmri.mat'), 'mri')
+
+source.pos = template_grid.pos;
+source.inside = template_grid.inside;
 
 cfg                 = [];
-cfg.parameter       = 'kurtosis';
-source_interp       = ft_sourceinterpolate(cfg, testSource, mri);
+cfg.parameter       = 'pow';
+source_interp       = ft_sourceinterpolate(cfg, source, mri);
 
 cfg                 = [];
-cfg.funparameter    = 'kurtosis';
+cfg.funparameter    = 'pow';
 cfg.method          = 'slice'; % orthogonal slices with crosshairs at peak (default anyway if not specified)
 figure;ft_sourceplot(cfg, source_interp);
 
@@ -174,6 +178,13 @@ template_grid = ft_convert_units(template_grid, 'mm');
 
 atlas = ft_read_atlas('/home/common/matlab/fieldtrip/template/atlas/brainnetome/BNA_MPM_thr25_1.25mm.nii');
 atlas = ft_convert_coordsys(atlas, 'ctf');
+
+mri = ft_read_mri('/home/common/matlab/fieldtrip/template/anatomy/single_subj_T1.nii');
+        
+cfg                         = [];
+cfg.interpmethod            = 'nearest';
+cfg.parameter               = 'tissue';
+source_rsaInt               = ft_sourceinterpolate(cfg, atlas, mri);
 
 % The parcellation of the volumetric atlas gets interpolated onto the
 % subject specific sourcemodel (grid)

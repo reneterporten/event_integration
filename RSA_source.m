@@ -37,7 +37,7 @@ dataRSA             = rt_sourcersa(cfg, filterDataStory);
 save(fullfile(save_dir, subjects{3}, 'dataRSA.mat'), 'dataRSA')
 
 
-%% Create source structure based on RSA data
+%% Create source structure based on RSA data and average over subjects
 
 ftpath   = '/home/common/matlab/fieldtrip'; % this is the path to FieldTrip at Donders
 load(fullfile(ftpath, 'template/sourcemodel/standard_sourcemodel3d7point5mm'));
@@ -45,52 +45,68 @@ template_grid = sourcemodel;
 clear sourcemodel;
 load(fullfile(save_dir, 'atlas_grid.mat'), 'atlas_grid')
 
-rsaparcellation = nan(length(atlas_grid.parcellation1D),size(dataRSA.RSM, 2));
+ignoreSubs = [4 10 12 20];
+normidx = 1;
+for normsub = 1:10
+    
+    disp(strcat('Calculating general filter: ', int2str(normsub)))
+    disp('Loading...')
+    
+    if ~ismember(normsub, ignoreSubs)
 
-for parcel = 1:length(dataRSA.parcels)
-    
-    disp(strcat('Calculating parcel:', int2str(parcel)))
-    
-    idxparcel                    = atlas_grid.parcellation1D == dataRSA.parcels(parcel);
-    parcel_matrix                = ones(size(rsaparcellation(idxparcel,:))).*dataRSA.RSM(parcel,:);
-    rsaparcellation(idxparcel,:) = parcel_matrix;
-    
+        load(fullfile(save_dir, subjects{normsub}, 'dataRSA.mat'), 'dataRSA')
+        load(fullfile(save_dir, subjects{normsub}, 'source_filter.mat'), 'source')
+        rsaparcellation = nan(length(atlas_grid.parcellation1D),size(dataRSA.RSM, 2));
+        
+        disp(strcat('Calculating parcel:...'))
+        for parcel = 1:length(dataRSA.parcels)
+
+            idxparcel                    = atlas_grid.parcellation1D == dataRSA.parcels(parcel);
+            parcel_matrix                = ones(size(rsaparcellation(idxparcel,:))).*dataRSA.RSM(parcel,:);
+            rsaparcellation(idxparcel,:) = parcel_matrix;
+
+        end
+
+        source_rsa                  = source;
+        source_rsa.rsaparcellation  = rsaparcellation(:,1);
+        source_rsa.parcels          = atlas_grid.parcellation1D;
+        source_rsa.pos              = template_grid.pos;
+        source_rsa.inside           = template_grid.inside;
+
+        source_rsaAll{normidx,1}    = source_rsa;
+        
+        normidx = normidx + 1;
+
+    end
 end
 
-source_rsa                  = source;
-source_rsa.rsaparcellation  = rsaparcellation(:,1);
-source_rsa.parcels = atlas_grid.parcellation1D;
-source_rsa.pos = source.pos;
+cfg           = [];
+cfg.parameter = 'rsaparcellation';
+source_rsaAVG = ft_sourcegrandaverage(cfg, source_rsaAll{:,1});
 
-
-%% Source plot
-
-load(fullfile(save_dir, subjects{3}, 'alignedmri.mat'), 'mri')
-%mri = ft_read_mri('/home/common/matlab/fieldtrip/template/anatomy/single_subj_T1.nii');
-
+mri = ft_read_mri('/home/common/matlab/fieldtrip/template/anatomy/single_subj_T1.nii');
+        
 cfg                         = [];
 cfg.interpmethod            = 'nearest';
 cfg.parameter               = 'rsaparcellation';
-source_rsaInt               = ft_sourceinterpolate(cfg, source_rsa, mri);
-
-cfg                 = [];
-source_rsaNorm   = ft_volumenormalise(cfg, source_rsaInt);
-source_rsaNorm.rsaparcellation(source_rsaNorm.rsaparcellation == 0) = NaN;
+source_rsaInt               = ft_sourceinterpolate(cfg, source_rsaAVG, mri);
+source_rsaInt.rsaparcellation(source_rsaInt.rsaparcellation == 0) = NaN;
 
 % plot multiple 2D axial slices
 cfg = [];
-cfg.method        = 'slice';
-cfg.funparameter  = 'rsaparcellation';
-cfg.maskparameter = cfg.funparameter;
-cfg.funcolorlim   = [0 0.08];
+cfg.method        = 'surface';
+cfg.surfinflated  = 'surface_inflated_both.mat';
+cfg.funparameter  = 'tissue';
+%cfg.maskparameter = cfg.funparameter;
+%cfg.funcolorlim   = [0 0.08];
 %cfg.opacitylim    = [0.0 1.2];
 cfg.opacitymap    = 'rampup';
 cfg.camlight       = 'no';
-figure;ft_sourceplot(cfg, source_rsaNorm);
+figure;ft_sourceplot(cfg, atlas);
 set(gcf,'color','w')
-ft_hastoolbox('brewermap', 1);         
-colormap(brewermap(64,'OrRd'))
-%view([-20 30])
+%ft_hastoolbox('brewermap', 1);         
+%colormap(brewermap(64,'OrRd'))
+view([-20 30])
 
 
 %% Create channel X timewindow plot

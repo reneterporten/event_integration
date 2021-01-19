@@ -97,7 +97,7 @@ end
 
 % Compare neural RSM to prediction rsm
 sanitydata      = xlsread('/project/3012026.13/scripts_RT/sanity_pre.xlsx'); % Visual similarity
-%Create prediction RDM that matches trial x trial structure of data
+% Create prediction RDM that matches trial x trial structure of data
 cfg             = [];
 cfg.offdiag     = true; % Use postdata structure for off diagional (phase comparison)
 predictionRDM   = rt_predictionRDMxlsx(cfg, sanitydata, sanitydata);
