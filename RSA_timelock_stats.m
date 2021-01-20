@@ -192,6 +192,29 @@ stat_unlink         = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAper
 %disp('Done saving.')    
 
 
+%% Prepare differences for interaction
+
+% First calculate the per subject difference in AB(pre)-AX(pre) and the
+% same for AB(post)-AX(post)
+
+% In our cmb structure were are thus testen cell 2 - 3 and 17 - 18
+% respectively
+
+cfg = [];
+cfg.operation = 'subtract';
+cfg.parameter = 'trial';
+Tdiff_pre = cell(1,length(T));
+for subs = 1:length(T)
+    Tdiff_pre{subs} = ft_math(cfg, T{2,subs}, T{3,subs});
+end
+
+Tdiff_post = cell(1,length(T));
+for subs = 1:length(T)
+    Tdiff_post{subs} = ft_math(cfg, T{17,subs}, T{18,subs});
+end
+
+
+
 %% Stats on MCCA data
 
 cfg                         = [];
@@ -227,9 +250,12 @@ cfg.design = design;
 cfg.uvar   = 1;
 cfg.ivar   = 2;
 
-stat_ABpost_ABpre    = ft_timelockstatistics(cfg, T{17,:}, T{2,:});
-stat_AXpost_AXpre    = ft_timelockstatistics(cfg, T{18,:}, T{3,:});
+%stat_ABpost_ABpre    = ft_timelockstatistics(cfg, T{17,:}, T{2,:});
+%stat_AXpost_AXpre    = ft_timelockstatistics(cfg, T{18,:}, T{3,:});
 
+% Testing within a 2x2 factor within subject anova framework
+% AB-AX(pre) compared to AB-AX(post)
+stat_interaction    = ft_timelockstatistics(cfg, Tdiff_pre{:}, Tdiff_post{:});
 
 cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_AXpost_AXpre)
 
