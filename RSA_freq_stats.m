@@ -1,4 +1,4 @@
-%% Apply RSA with spatial and temporal searchlight to timelock data
+%% Apply RSA with spatial and temporal searchlight to time frequency data
 %% Default path
 
 addpath /home/common/matlab/fieldtrip/
@@ -16,241 +16,31 @@ subjects = {'sub-004','sub-005','sub-006','sub-007','sub-008','sub-009',...
     'sub-032','sub-033','sub-034','sub-035','sub-036','sub-037','sub-038'};
 
 
-%% Collect all data across subjects
-
-
-% Integrate data from RSA into structure that is intepretable by fieldtrip
-load(fullfile('/project/3012026.13/processed_RT/', 'template_timelock.mat'));
-cfg                 = [];
-cfg.avgoverrpt      = 'yes';
-cfg.avgovertime     = 'no';
-template_data       = ft_selectdata(cfg, template_timelock);
-template_data.time  = [1:15]*0.125;
-template_data       = rmfield(template_data, 'trial');
-template_data.cfg   = [];
-clear template_timelock
-
-% Create data structure that contains RSA data of all subjects
-% Allocate overall structure
-ignSub = [4, 10, 12, 20, 30, 32];
-allDataRSA = cell((length(subjects)-length(ignSub)),1);
-
-rsa_count = 1;
-for subData = 1:length(subjects)
-    
-    if ~ismember(subData, ignSub)
-
-        disp(strcat('Creating RSA structure:', int2str(subData)))
-
-        subj = subjects{subData};
-
-        load(fullfile('/project/3012026.13/processed_RT/RSA Results/', subj,'dataRSA.mat'));
-        
-        % Create data structure from template ERP data
-        dataRSApre                  = template_data;
-        dataRSApost                 = template_data;
-        
-        dataRSApre.narinsight   = dataRSA.narinsight_pre;
-        dataRSApost.narinsight   = dataRSA.narinsight_post;
-        
-        % Visual similarity
-%         dataRSAorg.vis1             = dataRSA.vis1;
-%         dataRSAperm.vis1            = dataRSA.vis1_rand;
-%         
-%         % Narrative insight interaction
-%         dataRSAorg.narinsight       = dataRSA.narinsight;
-%         dataRSAperm.narinsight      = dataRSA.narinsight_rand;
-%         
-%         % Narrative insight behavior
-%         dataRSAorg.behavinsight     = dataRSA.behavinsight;
-%         dataRSAperm.behavinsight    = dataRSA.behavinsight_rand;
-%         
-%         % Narrative mismatch
-%         dataRSAorg.narmism          = dataRSA.narmism;
-%         dataRSAperm.narmism         = dataRSA.narmism_rand;
-%         
-%         % (Un)lining mechanism
-%         dataRSAorg.unlink           = dataRSA.unlink;
-%         dataRSAperm.unlink          = dataRSA.unlink_rand;
-
-        allDataRSApre{rsa_count}    = dataRSApre;
-        allDataRSApost{rsa_count}   = dataRSApost;
-        rsa_count                   = rsa_count + 1;
-    
-    end
-
-end
-
-keep allDataRSApost allDataRSApre ignSub subjects save_dir root_dir
-
-
-%% Cluster based stats across subjects (within groups)
-
-cfg                         = [];
-cfg.method                  = 'template'; 
-cfg.template                = 'CTF275_neighb.mat';               
-cfg.layout                  = 'CTF275_helmet.mat';                     
-cfg.feedback                = 'no';                            
-neighbours                  = ft_prepare_neighbours(cfg, allDataRSApre{1}); 
-
-cfg                         = [];
-cfg.channel                 = {'all'};
-cfg.neighbours              = neighbours;
-cfg.latency                 = 'all';
-cfg.method                  = 'montecarlo';
-cfg.statistic               = 'ft_statfun_depsamplesT';
-cfg.correctm                = 'cluster';
-cfg.avgovertime             = 'no';
-cfg.clusteralpha            = 0.05;
-cfg.clusterstatistic        = 'maxsum';
-cfg.minnbchan               = 2;
-cfg.tail                    = 0;
-cfg.clustertail             = 0;
-cfg.alpha                   = 0.05;
-cfg.correcttail             = 'prob';
-cfg.numrandomization        = 1000;
-
-Nsubj  = length(allDataRSApre);
-design = zeros(2, Nsubj*2);
-design(1,:) = [1:Nsubj 1:Nsubj];
-design(2,:) = [ones(1,Nsubj) ones(1,Nsubj)*2];
-
-cfg.design = design;
-cfg.uvar   = 1;
-cfg.ivar   = 2;
-
-cfg.parameter       = 'narinsight';
-stat_nar_prepost    = ft_timelockstatistics(cfg, allDataRSApre{:}, allDataRSApost{:});
-% cfg.parameter       = 'vis1';
-% stat_vis            = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-% cfg.parameter       = 'narinsight';
-% stat_narinsight     = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-% cfg.parameter       = 'behavinsight';
-% stat_behavinsight   = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-% cfg.parameter       = 'narmism';
-% stat_narmism        = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-% cfg.parameter       = 'unlink';
-% stat_unlink         = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-
-%save(fullfile('/project/3012026.13/processed_RT/surprisal/', 'stat_preeff_vs_posteff.mat'), 'stat_exp_vs_surp', '-v7.3')
-%disp('Done saving.')    
-
-
-%% Cluster based stats across subjects (between groups)
-
-cfg                         = [];
-cfg.method                  = 'template'; 
-cfg.template                = 'CTF275_neighb.mat';               
-cfg.layout                  = 'CTF275_helmet.mat';                     
-cfg.feedback                = 'no';                            
-neighbours                  = ft_prepare_neighbours(cfg, allDataRSAorg{1}); 
-
-cfg                         = [];
-cfg.channel                 = {'all'};
-cfg.neighbours              = neighbours;
-cfg.latency                 = 'all';
-cfg.method                  = 'montecarlo';
-cfg.statistic               = 'ft_statfun_indepsamplesT';
-cfg.correctm                = 'cluster';
-cfg.avgovertime             = 'no';
-cfg.clusteralpha            = 0.05;
-cfg.clusterstatistic        = 'maxsum';
-cfg.minnbchan               = 2;
-cfg.tail                    = 0;
-cfg.clustertail             = 0;
-cfg.alpha                   = 0.05;
-cfg.correcttail             = 'prob';
-cfg.numrandomization        = 1000;
-
-subj = length(allDataRSAorg);
-design = zeros(2,2*subj);
-for i = 1:subj
-  design(1,i) = i;
-end 
-for i = 1:subj
-  design(1,subj+i) = i;
-end
-design(2,1:subj)        = 1;
-design(2,subj+1:2*subj) = 2;
-
-
-cfg.design = design;
-cfg.ivar  = 2;
-
-cfg.parameter       = 'vis1';
-stat_vis            = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-cfg.parameter       = 'narinsight';
-stat_narinsight     = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-cfg.parameter       = 'behavinsight';
-stat_behavinsight   = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-cfg.parameter       = 'narmism';
-stat_narmism        = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-cfg.parameter       = 'unlink';
-stat_unlink         = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
-
-%save(fullfile('/project/3012026.13/processed_RT/surprisal/', 'stat_preeff_vs_posteff.mat'), 'stat_exp_vs_surp', '-v7.3')
-%disp('Done saving.')    
-
 
 %% Prepare differences for interaction
 
-% First calculate the per subject difference in AB(pre)-AX(pre) and the
-% same for AB(post)-AX(post)
-% In our cmb structure were are thus testing cell 2 - 3 and 17 - 18
-% respectively
-
-% For AB(pre)-BX(pre) and AB(post)-BX(post) use cells:
-% 2 - 8   &   17 - 20 
-
 cfg = [];
 cfg.operation = 'subtract';
-cfg.parameter = 'trial';
-Tdiff_pre = cell(1,length(T));
-for subs = 1:length(T)
-    Tdiff_pre{subs} = ft_math(cfg, T{2,subs}, T{8,subs});
+cfg.parameter = 'avg';
+Fdiff_preAX = cell(1,length(F));
+Fdiff_preBX = cell(1,length(F));
+for subs = 1:length(F)
+    Fdiff_preAX{subs} = ft_math(cfg, F{1,subs}, F{3,subs});
+    Fdiff_preBX{subs} = ft_math(cfg, F{2,subs}, F{3,subs});
 end
 
-Tdiff_post = cell(1,length(T));
-for subs = 1:length(T)
-    Tdiff_post{subs} = ft_math(cfg, T{17,subs}, T{20,subs});
-end
-
-
-%% Prepare differences for interaction
-
-% First calculate the per subject difference in AB(pre)-AX(pre) and the
-% same for AB(post)-AX(post)
-% In our cmb structure were are thus testing cell 2 - 3 and 17 - 18
-% respectively
-
-% For AB(pre)-BX(pre) and AB(post)-BX(post) use cells:
-% 2 - 8   &   17 - 20 
-
-cfg = [];
-cfg.operation = 'subtract';
-cfg.parameter = 'trial';
-Tdiff_preAX = cell(1,length(T));
-Tdiff_preBX = cell(1,length(T));
-for subs = 1:length(T)
-    Tdiff_preAX{subs} = ft_math(cfg, T{1,subs}, T{3,subs});
-    Tdiff_preAX{subs}.avg = Tdiff_preAX{subs}.trial;
-    Tdiff_preBX{subs} = ft_math(cfg, T{2,subs}, T{3,subs});
-    Tdiff_preBX{subs}.avg = Tdiff_preBX{subs}.trial;
-end
-
-Tdiff_postAX = cell(1,length(T));
-for subs = 1:length(T)
-    Tdiff_postAX{subs} = ft_math(cfg, T{4,subs}, T{6,subs});
-    Tdiff_postAX{subs}.avg = Tdiff_postAX{subs}.trial;
-    Tdiff_postBX{subs} = ft_math(cfg, T{5,subs}, T{6,subs});
-    Tdiff_postBX{subs}.avg = Tdiff_postBX{subs}.trial;
+Fdiff_postAX = cell(1,length(F));
+Fdiff_postBX = cell(1,length(F));
+for subs = 1:length(F)
+    Fdiff_postAX{subs} = ft_math(cfg, F{4,subs}, F{6,subs});
+    Fdiff_postBX{subs} = ft_math(cfg, F{5,subs}, F{6,subs});
 end
 
 cfg = [];
 cfg.parameter = 'avg';
-Tdiff_preAX_avg = ft_timelockgrandaverage(cfg, Tdiff_preAX{:});
+Fdiff_preAX_avg = ft_freqgrandaverage(cfg, Fdiff_preAX{:});
 
-cfg = []; cfg.parameter = 'avg'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, Tdiff_preAX_avg)
+figure; cfg = []; cfg.xlim = [0.5 1.0]; cfg.ylim = [15 20]; cfg.parameter = 'avg'; cfg.layout = 'CTF275_helmet.mat'; ft_topoplotTFR(cfg, Fdiff_preAX_avg)
 
 
 %% Stats on MCCA data
@@ -260,11 +50,14 @@ cfg.method                  = 'template';
 cfg.template                = 'CTF275_neighb.mat';               
 cfg.layout                  = 'CTF275_helmet.mat';                     
 cfg.feedback                = 'no';                            
-neighbours                  = ft_prepare_neighbours(cfg, T{1,1}); 
+neighbours                  = ft_prepare_neighbours(cfg, F{1,1}); 
 
 cfg                         = [];
 cfg.channel                 = {'all'};
+cfg.parameter               = 'avg';
 cfg.neighbours              = neighbours;
+cfg.frequency               = [8 12];
+cfg.avgoverfreq             = 'yes';
 cfg.latency                 = 'all';
 cfg.method                  = 'montecarlo';
 cfg.statistic               = 'ft_statfun_depsamplesT';
@@ -279,7 +72,7 @@ cfg.alpha                   = 0.05;
 cfg.correcttail             = 'prob';
 cfg.numrandomization        = 1000;
 
-Nsubj  = size(T,2);
+Nsubj  = size(F,2);
 design = zeros(2, Nsubj*2);
 design(1,:) = [1:Nsubj 1:Nsubj];
 design(2,:) = [ones(1,Nsubj) ones(1,Nsubj)*2];
@@ -288,17 +81,15 @@ cfg.design = design;
 cfg.uvar   = 1;
 cfg.ivar   = 2;
 
-%stat_ABpost_ABpre    = ft_timelockstatistics(cfg, T{17,:}, T{2,:});
-%stat_AXpost_AXpre    = ft_timelockstatistics(cfg, T{18,:}, T{3,:});
-
 % Testing within a 2x2 factor within subject anova framework
-% AB-AX(pre) compared to AB-AX(post)
-stat_interactionAX    = ft_timelockstatistics(cfg, Tdiff_preAX{:}, Tdiff_postAX{:});
-stat_interactionBX    = ft_timelockstatistics(cfg, Tdiff_preBX{:}, Tdiff_postBX{:});
+stat_interactionAX    = ft_freqstatistics(cfg, Fdiff_preAX{:}, Fdiff_postAX{:});
+stat_interactionBX    = ft_freqstatistics(cfg, Fdiff_preBX{:}, Fdiff_postBX{:});
 
-cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_interaction)
-cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_interaction)
 
+cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_interactionAX)
+cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_interactionAX)
+
+cfg = []; cfg.xlim = [0.5 1.0]; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_topoplotTFR(cfg, stat_interactionAX)
 
 %% Cluster plot of stats
 

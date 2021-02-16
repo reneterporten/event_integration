@@ -1,10 +1,10 @@
-function rt_mcca(subj, varargin)
+function rt_mcca_ERP(subj, varargin)
 
 %% 
 % get the data
 cfg      = ft_getopt(varargin, 'cfg_preproc', []);
 root_dir = '/project/3012026.13/processed';
-data     = rt_mytimelockv3(root_dir, subj, 'cfg_preproc', cfg);
+data     = rt_mytimelockv4(root_dir, subj, 'cfg_preproc', cfg);
 
 %%
 % create a 'neighbourhood matrix that determines which channels are to be
@@ -101,20 +101,12 @@ clear C;
 cliplabel = {'Apre';'Bpre';'Xpre';'Apst';'Bpst';'Xpst'};
 for p = 1:nstory
   fprintf('computing correlations for story %d\n', p);
-  cnt = 0;
   for k = 1:ncnd
-    for m = k:ncnd
-      cnt = cnt+1;
+
       x = reshape(alldat(:,:,p,:,k),nchan, nrpt, ntime);
-      y = reshape(alldat(:,:,p,:,m),nchan, nrpt, ntime);
-      c = trc(x,y,n);
-      
-      if k==m
-        c(c==1) = nan;
-      end
-      C(:,:,cnt,p) = squeeze(nanmean(nanmean(c,3),2));
-      cmb(cnt,:) = {cliplabel{k} cliplabel{m}};
-    end
+
+      C(:,:,k,p) = squeeze(mean(x, 2));
+      cmb(k,:) = {cliplabel{k}};
   end
 end
 
@@ -131,8 +123,9 @@ for k = 1:size(C,3)
   end
 end
 
+
 save_dir = '/project/3012026.13/jansch';
-save(fullfile(save_dir, sprintf('%s_mcca_alpha_rsm', subj)), 'tlck', 'cmb');
+save(fullfile(save_dir, sprintf('%s_mcca_ERP', subj)), 'tlck', 'cmb');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % subfunctions

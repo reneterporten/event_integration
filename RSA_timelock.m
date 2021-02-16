@@ -204,15 +204,28 @@ colormap(flipud(brewermap(64,'RdBu')))
 % Run for each subject
 for m = 1:numel(subjects)
     subj = subjects{m};
-    qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
+    %qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
+    %qsubfeval('rt_mcca', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); % rt_mytimelockv3 includes hilbert
+    %qsubfeval('rt_mcca_ERP', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+    qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
 end
 
 % Collect data for group avg
-suff = 'mcca_theta_rsm';
-rt_collect_rsm(suff)
+%suff = 'mcca_theta_rsm';
+%suff = 'mcca_alpha_rsm';
+%suff = 'mcca_ERP';
+suff = 'mcca_FREQ';
+%rt_collect_rsm(suff)
+rt_collect_FREQ(suff)
 
 % Load the aggregated data
+load('/project/3012026.13/jansch/groupdata_mcca_theta_hilbert.mat')
+load('/project/3012026.13/jansch/groupdata_mcca_alpha_hilbert.mat')
+load('/project/3012026.13/jansch/groupdata_mcca_alpha_rsm.mat')
 load('/project/3012026.13/jansch/groupdata_mcca_theta_rsm.mat')
+load('/project/3012026.13/jansch/groupdata_mcca_ERP.mat')
+load('/project/3012026.13/jansch/groupdata_mcca_FREQ.mat')
+
 
 %% Do correlation of neural RSM and prediction RSM
 
@@ -272,10 +285,20 @@ avgPredRSM = ft_timelockgrandaverage(cfg, groupPredRSM{:,1});
 
 
 %% Plot
+for x = 1:size(T, 2)
+    T{1,x}.avg = T{1,x}.trial;
+    T{4,x}.avg = T{4,x}.trial;
+end
+
+
+cfg = [];
+TApre = ft_timelockgrandaverage(cfg, T{1,:});
+TApost = ft_timelockgrandaverage(cfg, T{4,:});
 
 cfg = [];
 cfg.layout = 'CTF275_helmet.mat';  
-ft_multiplotER(cfg, avgPredRSM);
+%ft_multiplotER(cfg, avgPredRSM);
+ft_multiplotER(cfg, TApre,TApost);
 
 %% Plot RSA based on MCCA results
 

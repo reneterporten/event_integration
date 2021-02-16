@@ -1,4 +1,4 @@
-function [my_data] = rt_mytimelockv3(root_dir, subj, varargin)
+function [my_data] = rt_myfreqanalysis(root_dir, subj, varargin)
 
 
 % load data, remove bad trials and filter
@@ -22,13 +22,9 @@ end
 % do some preprocessing
 cfg         = ft_getopt(varargin, 'cfg_preproc', []);
 if ~any(contains(fieldnames(struct(cfg)), 'filter'))
-  %cfg.lpfilter = 'yes';
-  %cfg.lpfreq   = 35;
-  cfg.bpfilter  = 'yes';
-  %cfg.bpfreq    = [3 7];
-  cfg.bpfreq    = [8 12];
-  cfg.lpfilttype = 'firws';
-  %cfg.hilbert    = 'abs';
+  cfg.lpfilter      = 'no';
+  cfg.lpfreq        = 150;
+  cfg.lpfilttype    = 'firws';
 end
 cfg.trials  = find(dataclean.trialinfo(:,5)==1);
 data_pre    = ft_preprocessing(cfg, dataclean);
@@ -52,13 +48,25 @@ data_post_tl     = ft_megplanar(cfg, data_post);
 nstory           = max(unique(data_post.trialinfo(:,4)));
 clear data_pre data_post;
 
-% convert to a timelock representation
-cfg              = ft_getopt(varargin, 'cfg_timelock', []);
-cfg.channel      = 'MEG';
-cfg.trials       = 'all';
-cfg.keeptrials   = 'yes';
-data_pre_tl      = ft_timelockanalysis(cfg, data_pre_tl);
-data_post_tl     = ft_timelockanalysis(cfg, data_post_tl);
+% convert to a time frequency representation
+cfg             = [];
+cfg.output      = 'pow';
+cfg.channel     = 'MEG';
+cfg.method      = 'mtmconvol';
+cfg.taper       = 'hanning';
+cfg.foi         = 2:1:40;
+cfg.trials      = 'all';
+cfg.t_ftimwin   = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec % 1.0 sec
+cfg.toi         = [-1:0.05:2];
+cfg.pad         ='nextpow2';
+cfg.keeptrials  = 'yes'; %% we keep the single trials        
+data_pre_tl      = ft_freqanalysis(cfg, data_pre_tl);
+data_post_tl     = ft_freqanalysis(cfg, data_post_tl);
+
+% Combine to planar gradient
+%cfg = [];
+%data_pre_tl      = ft_combineplanar(cfg, data_pre_tl);
+%data_post_tl     = ft_combineplanar(cfg, data_post_tl);
 
 % prune the epochs
 cfg              = [];

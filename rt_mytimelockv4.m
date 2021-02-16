@@ -1,4 +1,4 @@
-function [my_data] = rt_mytimelockv3(root_dir, subj, varargin)
+function [my_data] = rt_mytimelockv4(root_dir, subj, varargin)
 
 
 % load data, remove bad trials and filter
@@ -22,13 +22,9 @@ end
 % do some preprocessing
 cfg         = ft_getopt(varargin, 'cfg_preproc', []);
 if ~any(contains(fieldnames(struct(cfg)), 'filter'))
-  %cfg.lpfilter = 'yes';
-  %cfg.lpfreq   = 35;
-  cfg.bpfilter  = 'yes';
-  %cfg.bpfreq    = [3 7];
-  cfg.bpfreq    = [8 12];
-  cfg.lpfilttype = 'firws';
-  %cfg.hilbert    = 'abs';
+  cfg.lpfilter      = 'yes';
+  cfg.lpfreq        = 35;
+  cfg.lpfilttype    = 'firws';
 end
 cfg.trials  = find(dataclean.trialinfo(:,5)==1);
 data_pre    = ft_preprocessing(cfg, dataclean);
