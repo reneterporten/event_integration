@@ -1,4 +1,4 @@
-function rt_mcca(subj, varargin)
+function [dataout] = rt_mcca(subj, varargin)
 
 %% 
 % get the data
