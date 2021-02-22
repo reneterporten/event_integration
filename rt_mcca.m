@@ -1,4 +1,4 @@
-function [dataout] = rt_mcca(data)
+function [dataout, tlck] = rt_mcca(data)
 
 % RT_MCCA computes a multiset canonical correlation on an input dataset
 
@@ -109,15 +109,16 @@ mixing_flipped = mixing;
 unmixing_flipped = unmixing;
 for k = 1:nstory
   fprintf('aligning polarity across channels for story %d/%d\n', k, nstory);
-  input = reshape(mixing(:,:,:,k), size(mixing,1), []);
-  [output, flipped] = polarity_align(input, 0); %JM's hunch is to align the mixing, and not the unmixing weights
+  input = reshape(unmixing(:,:,:,k), size(unmixing,1), []);
+  [output, flipped] = polarity_align(input, 0); 
   
   siz = size(mixing);
-  mixing_flipped(:,:,:,k) = reshape(output, [size(output,1), siz(2:3)]);
-  unmixing_flipped(:,:,:,k) = repmat(flipped, [1 siz(2:3)]).*unmixing(:,:,:,k);
+  unmixing_flipped(:,:,:,k) = reshape(output, [size(output,1), siz(2:3)]);
+  mixing_flipped(:,:,:,k) = repmat(flipped, [1 siz(2:3)]).*mixing(:,:,:,k);
 end
 
 % combine the weights with the corresponding input data.
+index = cell(1,nstory);
 for k = 1:nstory
   fprintf('computing canonical components for story %d/%d\n', k, nstory);
   
@@ -134,9 +135,33 @@ for k = 1:nstory
     for mm = 1:size(ix,2)
       dataout.trial{ix(m,mm)} = unmixing_flipped(:,:,m,mm) * data.trial{ix(m,mm)};
       dataout.trial{iy(m,mm)} = unmixing_flipped(:,:,m,mm) * data.trial{iy(m,mm)};
+     
+      % facilitates covariance estimate for final polarity check/adjustment
+      dataout.trial{ix(m,mm)} = dataout.trial{ix(m,mm)} - nanmean(dataout.trial{ix(m,mm)},2);
+      dataout.trial{iy(m,mm)} = dataout.trial{iy(m,mm)} - nanmean(dataout.trial{iy(m,mm)},2);
     end
   end
   
+  index{k} = [ix(:);iy(:)];
+end
+
+% % compute the components average per story, and check whether the
+% % corresponding signals are aligned
+% dat = zeros([size(dataout.trial{1}) nstory]);
+% for k = 1:nstory
+%   dat(:,:,k) = mean(cat(3, dataout.trial{index{k}}),3);
+% end
+
+dataout.label = label;
+
+% compute the average across clips, that's basically for free
+conds = [1 2 3 5 6 7];
+for k = 1:numel(conds)
+  tmpcfg        = [];
+  tmpcfg.trials = find(dataout.trialinfo(:,2)==conds(k));
+  tmpcfg.preproc.baselinewindow = [-0.1 0];
+  tmpcfg.preproc.demean         = 'yes';
+  tlck(k) = ft_timelockanalysis(tmpcfg, dataout);
 end
 
 

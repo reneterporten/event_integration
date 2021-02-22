@@ -22,12 +22,13 @@ end
 % do some preprocessing
 cfg         = ft_getopt(varargin, 'cfg_preproc', []);
 if ~any(contains(fieldnames(struct(cfg)), 'filter'))
-  %cfg.lpfilter = 'yes';
-  %cfg.lpfreq   = 35;
-  cfg.bpfilter  = 'yes';
-  %cfg.bpfreq    = [3 7];
-  cfg.bpfreq    = [8 12];
+  cfg.lpfilter   = 'yes';
+  cfg.lpfreq     = 35;
   cfg.lpfilttype = 'firws';
+  %cfg.bpfilter  = 'yes';
+  %cfg.bpfreq    = [3 7];
+  %cfg.bpfreq    = [8 12];
+  %cfg.bpfilttype = 'firws';
   %cfg.hilbert    = 'abs';
 end
 cfg.trials  = find(dataclean.trialinfo(:,5)==1);
