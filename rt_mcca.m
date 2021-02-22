@@ -59,7 +59,7 @@ for k = 1:nstory
   datpre = zeros(nchan, size(ix,1), ntime*size(ix,2));
   for m = 1:size(ix,1)
     for mm = 1:size(ix,2)
-      datpre(:,m,(mm-1)*ntime+(1:ntime)) = data.trial{ix(m,mm)};
+      datpre(:,m,(mm-1)*ntime+(1:ntime)) = data.trial{ix(m,mm)} - nanmean(data.trial{ix(m,mm)},2);
     end
   end
   
@@ -67,7 +67,7 @@ for k = 1:nstory
   datpost = zeros(nchan, size(iy,1), ntime*size(iy,2));
   for m = 1:size(iy,1)
     for mm = 1:size(iy,2)
-      datpost(:,m,(mm-1)*ntime+(1:ntime)) = data.trial{iy(m,mm)};
+      datpost(:,m,(mm-1)*ntime+(1:ntime)) = data.trial{iy(m,mm)} - nanmean(data.trial{iy(m,mm)},2);
     end
   end
   dat = cat(2, datpre, datpost);
@@ -109,12 +109,12 @@ mixing_flipped = mixing;
 unmixing_flipped = unmixing;
 for k = 1:nstory
   fprintf('aligning polarity across channels for story %d/%d\n', k, nstory);
-  input = reshape(unmixing(:,:,:,k), size(unmixing,1), []);
+  input = reshape(mixing(:,:,:,k), size(mixing,1), []);
   [output, flipped] = polarity_align(input, 0); 
   
   siz = size(mixing);
-  unmixing_flipped(:,:,:,k) = reshape(output, [size(output,1), siz(2:3)]);
-  mixing_flipped(:,:,:,k) = repmat(flipped, [1 siz(2:3)]).*mixing(:,:,:,k);
+  mixing_flipped(:,:,:,k) = reshape(output, [size(output,1), siz(2:3)]);
+  unmixing_flipped(:,:,:,k) = repmat(flipped, [1 siz(2:3)]).*unmixing(:,:,:,k);
 end
 
 % combine the weights with the corresponding input data.
@@ -145,11 +145,19 @@ for k = 1:nstory
   index{k} = [ix(:);iy(:)];
 end
 
-% % compute the components average per story, and check whether the
-% % corresponding signals are aligned
+% compute the components average per story, and check whether the
+% corresponding signals are aligned
 % dat = zeros([size(dataout.trial{1}) nstory]);
 % for k = 1:nstory
 %   dat(:,:,k) = mean(cat(3, dataout.trial{index{k}}),3);
+% end
+% 
+% for k = 1:nstory
+%   for m = 1:nstory
+%     if k~=m
+%     cdat(:,k,m) = sum(dat(:,:,k).*dat(:,:,m),2)./sqrt(sum(dat(:,:,k).*dat(:,:,k),2) .* sum(dat(:,:,m).*dat(:,:,m),2));
+%     end
+%   end
 % end
 
 dataout.label = label;
@@ -164,6 +172,9 @@ for k = 1:numel(conds)
   tlck(k) = ft_timelockanalysis(tmpcfg, dataout);
 end
 
+for k = 1:6
+  tlck(k).time = tlck(1).time;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % subfunctions
