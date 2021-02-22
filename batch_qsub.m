@@ -9,5 +9,5 @@ subjlist = {'sub-004' 'sub-005' 'sub-006' 'sub-008' 'sub-009' 'sub-010' ...
  'sub-035' 'sub-037'};
 
 for k = 1:numel(subjlist)
-  qsubfeval('rt_sensorlevelanalysis', subjlist{k}, [], 'timelock', 0, savedir, 'memreq', 12*1024^3, 'timreq', 60*60, 'batchid', subjlist{k});
+  qsubfeval('rt_sensorlevelanalysis', subjlist{k}, [], 'timelock', 1, savedir, 'memreq', 12*1024^3, 'timreq', 60*60, 'batchid', subjlist{k});
 end

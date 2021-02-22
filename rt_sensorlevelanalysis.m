@@ -42,6 +42,7 @@ end
 root_dir = '/project/3012026.13/processed';
 data     = rt_mytimelockv3(root_dir, subj, 'cfg_preproc', cfg);
 data     = ft_appenddata([], data{:});
+data     = removefields(data, {'elec'});
 
 if mccaflag
   data = rt_mcca(data);
@@ -62,6 +63,15 @@ switch type
       tlck(k).time = tlck(1).time;
     end
     
+    if ~mccaflag
+      % combine planar gradients
+      for k = 1:numel(tlck)
+        tlck_out(k) = ft_combineplanar([], tlck(k));
+      end
+      tlck = tlck_out;
+      clear tlck_out;
+    end
+    
     varargout{1} = tlck;
     if saveflag
       if mccaflag
@@ -69,8 +79,11 @@ switch type
       else
         suff = '';
       end
+      tlck = rmfield(tlck, 'cfg'); % this one is really big due to rt_mytimelockv3
+      
       fname = fullfile(savepath, sprintf('%s_tlck%s', subj, suff));
       save(fname, 'tlck');
+      clear data
     end
   case 'tfr'
     % to-be-implemented
