@@ -33,16 +33,23 @@ if saveflag
   end
 end
 
-if isempty(cfg)
+if isempty(cfg) && ~strcmp(type, 'tfr')
   cfg.lpfilter   = 'yes';
   cfg.lpfreq     = 35;
   cfg.lpfilttype = 'firws';
+elseif isempty(cfg) && strcmp(type, 'tfr')
+  cfg.lpfilter = 'no';
+  latency      = [-1 2-1./300];
+end
+
+if ~exist('latency', 'var')
+  latency = [];
 end
 
 root_dir = '/project/3012026.13/processed';
-data     = rt_mytimelockv3(root_dir, subj, 'cfg_preproc', cfg);
+data     = rt_mytimelockv3(root_dir, subj, 'cfg_preproc', cfg, 'latency', latency);
 data     = ft_appenddata([], data{:});
-data     = removefields(data, {'elec'});
+data     = removefields(data, {'elec' 'cfg'});
 
 if mccaflag
   data = rt_mcca(data);
@@ -86,7 +93,39 @@ switch type
       clear data
     end
   case 'tfr'
-    % to-be-implemented
+    cfg = [];
+    cfg.method = 'mtmconvol';
+    cfg.foi    = 2:2:30;
+    cfg.t_ftimwin = ones(1,numel(cfg.foi)).*0.5;
+    cfg.taper  = 'hanning';
+    cfg.toi    = (-150:15:450)./300;
+    cfg.pad    = 4;
+    
+    conds = [1 2 3 5 6 7];
+    for k = 1:numel(conds)
+      cfg.trials = find(data.trialinfo(:,2)==conds(k));
+      if ~mccaflag
+        freq(k)    = ft_combineplanar([], ft_freqanalysis(cfg, data));
+      else
+        freq(k)    = ft_freqanalysis(cfg, data);
+      end
+    end
+    
+    varargout{1} = freq;
+    if saveflag
+      if mccaflag
+        suff = '_mcca';
+      else
+        suff = '';
+      end
+      %freq = rmfield(freq, 'cfg'); % this one is really big due to rt_mytimelockv3
+      
+      fname = fullfile(savepath, sprintf('%s_freq%s', subj, suff));
+      save(fname, 'freq');
+      clear data
+    end
+    
+    
   case 'rsa'
     % to-be-implemented
 end

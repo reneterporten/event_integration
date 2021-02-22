@@ -21,6 +21,7 @@ end
 %%
 % do some preprocessing
 cfg         = ft_getopt(varargin, 'cfg_preproc', []);
+latency     = ft_getopt(varargin, 'latency', [-0.2 2-1./300]);
 if ~any(contains(fieldnames(struct(cfg)), 'filter'))
   cfg.lpfilter   = 'yes';
   cfg.lpfreq     = 35;
@@ -63,7 +64,7 @@ data_post_tl     = ft_timelockanalysis(cfg, data_post_tl);
 
 % prune the epochs
 cfg              = [];
-cfg.latency      = [-0.2 2]; %[0 2.0];
+cfg.latency      = latency; %[0 2.0];
 data_pre_tl      = ft_selectdata(cfg,data_pre_tl);
 data_post_tl     = ft_selectdata(cfg,data_post_tl);
 
