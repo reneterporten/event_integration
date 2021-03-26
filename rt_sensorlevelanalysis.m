@@ -88,6 +88,47 @@ switch type
       save(fname, 'tlck');
       clear data
     end
+    
+  case 'timelock123'
+    x = data.trialinfo(:,1);
+    [~, x] = sort(x);
+    [~, x] = sort(x); % x now maps the first column's values onto 1:ntrl
+    
+    for k = 1:3
+      tmpcfg        = [];
+      tmpcfg.trials = find(mod(x-1,3)+1==k);
+      tmpcfg.preproc.baselinewindow = [-0.1 0];
+      tmpcfg.preproc.demean         = 'yes';
+      tlck(k) = ft_timelockanalysis(tmpcfg, data);
+    end
+    
+    for k = 1:3
+      tlck(k).time = tlck(1).time;
+    end
+    
+    if ~mccaflag
+      % combine planar gradients
+      for k = 1:numel(tlck)
+        tlck_out(k) = ft_combineplanar([], tlck(k));
+      end
+      tlck = tlck_out;
+      clear tlck_out;
+    end
+    
+    varargout{1} = tlck;
+    if saveflag
+      if mccaflag
+        suff = '_mcca';
+      else
+        suff = '';
+      end
+      tlck = rmfield(tlck, 'cfg'); % this one is really big due to rt_mytimelockv3
+      
+      fname = fullfile(savepath, sprintf('%s_123%s%s', subj, savename, suff));
+      save(fname, 'tlck');
+      clear data
+    end
+    
   case 'tfr'
     if isempty(cfgfreq)
       cfgfreq = [];
