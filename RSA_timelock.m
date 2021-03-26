@@ -4,6 +4,7 @@
 addpath /home/common/matlab/fieldtrip/
 addpath /home/common/matlab/fieldtrip/qsub/
 addpath /project/3012026.13/scripts_RT/
+addpath /project/3012026.13/scripts_RT/Scripts_MCCA_Module
 ft_defaults
 
 root_dir     = '/project/3012026.13/processed/';
@@ -214,9 +215,13 @@ end
 %suff = 'mcca_theta_rsm';
 %suff = 'mcca_alpha_rsm';
 %suff = 'mcca_ERP';
-suff = 'mcca_FREQ';
+%suff = 'mcca_FREQ';
+suff = 'tfr.mat';
 %rt_collect_rsm(suff)
-rt_collect_FREQ(suff)
+%rt_collect_FREQ(suff)
+rt_collectdata(suff, 'theta')
+rt_collectdata(suff, 'alpha')
+rt_collectdata(suff, 'beta')
 
 % Load the aggregated data
 load('/project/3012026.13/jansch/groupdata_mcca_theta_hilbert.mat')
@@ -285,20 +290,21 @@ avgPredRSM = ft_timelockgrandaverage(cfg, groupPredRSM{:,1});
 
 
 %% Plot
-for x = 1:size(T, 2)
-    T{1,x}.avg = T{1,x}.trial;
-    T{4,x}.avg = T{4,x}.trial;
-end
 
-
-cfg = [];
-TApre = ft_timelockgrandaverage(cfg, T{1,:});
-TApost = ft_timelockgrandaverage(cfg, T{4,:});
+load('/project/3012026.13/jansch/groupdata_tlck.mat')
+tlck_stat = stat;
+load('/project/3012026.13/jansch/groupdata_theta_tfr.mat')
+theta_stat = stat;
+load('/project/3012026.13/jansch/groupdata_alpha_tfr.mat')
+alpha_stat = stat;
+clear stat
 
 cfg = [];
 cfg.layout = 'CTF275_helmet.mat';  
-%ft_multiplotER(cfg, avgPredRSM);
-ft_multiplotER(cfg, TApre,TApost);
+cfg.parameter = 'stat';
+cfg.xlim = [0.3 0.43];
+%ft_topoplotER(cfg, tlck_stat{1});
+ft_topoplotTFR(cfg, theta_stat{1});
 
 %% Plot RSA based on MCCA results
 

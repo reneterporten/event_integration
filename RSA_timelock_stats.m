@@ -296,8 +296,8 @@ cfg.ivar   = 2;
 stat_interactionAX    = ft_timelockstatistics(cfg, Tdiff_preAX{:}, Tdiff_postAX{:});
 stat_interactionBX    = ft_timelockstatistics(cfg, Tdiff_preBX{:}, Tdiff_postBX{:});
 
-cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_interaction)
-cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_interaction)
+cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat{11})
+cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat{12})
 
 
 %% Cluster plot of stats
