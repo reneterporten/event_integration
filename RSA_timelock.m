@@ -4,7 +4,7 @@
 addpath /home/common/matlab/fieldtrip/
 addpath /home/common/matlab/fieldtrip/qsub/
 addpath /project/3012026.13/scripts_RT/
-addpath /project/3012026.13/scripts_RT/Scripts_MCCA_Module
+%addpath /project/3012026.13/scripts_RT/Scripts_MCCA_Module
 ft_defaults
 
 root_dir     = '/project/3012026.13/processed/';
@@ -208,7 +208,8 @@ for m = 1:numel(subjects)
     %qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
     %qsubfeval('rt_mcca', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); % rt_mytimelockv3 includes hilbert
     %qsubfeval('rt_mcca_ERP', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
-    qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+    %qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+    qsubfeval('rt_sensorlevelanalysis', subj, 'saveflag', '/project/3012026.13/jansch/', 'type', 'timelock123', 'memreq', (1024^3)*12, 'timreq', 60*60)
 end
 
 % Collect data for group avg
@@ -217,6 +218,7 @@ end
 %suff = 'mcca_ERP';
 %suff = 'mcca_FREQ';
 suff = 'tfr.mat';
+%suff = '123timelock123.mat';
 %rt_collect_rsm(suff)
 %rt_collect_FREQ(suff)
 rt_collectdata(suff, 'theta')

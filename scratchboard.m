@@ -179,18 +179,64 @@ ylim([0 30])
 title('Position Count-Average for Post Trials')
 
 
+%%
+ignSub = [4, 10, 12, 20, 30, 32];
+for m = 1:numel(subjects)
+    subj = subjects{m}; 
+    if ~ismember(m, ignSub)
+        m
+        qsubfeval('rt_sensorlevelanalysis', subj, 'saveflag', '/project/3012026.13/jansch/', 'type', 'timelock123', 'memreq', (1024^3)*12, 'timreq', 60*60)
+    end
+end
 
 
+%%
+suff = '123timelock123.mat';
+datadir = '/project/3012026.13/jansch';
+cd(datadir);
+
+cfg1 = [];
+cfg1.appenddim = 'rpt';
+
+cfg2 = [];
+cfg2.avgoverrpt = 'yes';
+d = dir(sprintf('sub*%s*',suff));
+
+for k = 1:numel(d)
+      
+  disp(d(k).name)
+  tmp = load(d(k).name);
+  varname = fieldnames(tmp);
+  data = tmp.(varname{1});
+  
+  istimelock = ft_datatype(data(1), 'timelock');
+  
+  for m = 1:numel(data)
+    
+    % these are the indivdual pairwise correlations
+    F{m,k} = data(m);
+    F{m,k}.time = F{1,1}.time;
+  end
+
+end
 
 
+%%
 
+cfg                 = [];
+cfg.xlim            = [0.6 0.8];
+%cfg.zlim            = [-0.005 0.005];
+cfg.layout          = 'CTF275_helmet.mat';
+cfg.parameter       = 'stat';
+cfg.comment         = 'xlim';
+cfg.commentpos      = 'title';
+cfg.marker          = 'off';
+cfg.colorbar        = 'no';
 
-
-
-
-
-
-
+figure; ft_topoplotER(cfg, stat_23); colorbar
+set(gcf,'color','w')
+ft_hastoolbox('brewermap', 1);         
+colormap(flipud(brewermap(64,'RdBu')))
 
 
 

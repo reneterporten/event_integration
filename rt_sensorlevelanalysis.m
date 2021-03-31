@@ -10,6 +10,7 @@ type       = ft_getopt(varargin, 'type', 'timelock');
 mccaflag   = ft_getopt(varargin, 'mccaflag', false);
 saveflag   = ft_getopt(varargin, 'saveflag', false); % can be string to path, or boolean
 savename   = ft_getopt(varargin, 'savename', '');
+poscorrect = ft_getopt(varargin, 'poscorrect', false);
 
 if isempty(saveflag)
   saveflag = false;
@@ -53,6 +54,39 @@ end
 
 switch type
   case 'timelock'
+      
+    % Correct for the position of trials
+    if poscorrect
+        disp('Correct ERF for positions of trials.')
+        % Calculate the average for each positions irrespective of phase
+        x = data.trialinfo(:,1);
+        [~, x] = sort(x);
+
+        for k = 1:3
+          % Check this approach, tlckpos(1) is not equal to position 1
+          tmpcfg        = [];
+          tmpcfg.trials = x(k:3:length(x));
+          tmpcfg.preproc.baselinewindow = [-0.1 0];
+          tmpcfg.preproc.demean         = 'yes';
+          tlckpos(k) = ft_timelockanalysis(tmpcfg, data);
+        end
+
+        for k = 1:3
+          tlckpos(k).time = tlckpos(1).time;
+        end
+        
+        % Subtract average
+        for k = 1:3
+            k
+            currtrials = x(k:3:length(x));
+            for c = 1:length(currtrials)
+                data.trial{currtrials(c)} = data.trial{currtrials(c)} - tlckpos(k).avg;
+            end
+        end
+        
+        
+    end
+    
     conds = [1 2 3 5 6 7];
     for k = 1:numel(conds)
       tmpcfg        = [];

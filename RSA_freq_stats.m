@@ -43,6 +43,30 @@ Fdiff_preAX_avg = ft_freqgrandaverage(cfg, Fdiff_preAX{:});
 figure; cfg = []; cfg.xlim = [0.5 1.0]; cfg.ylim = [15 20]; cfg.parameter = 'avg'; cfg.layout = 'CTF275_helmet.mat'; ft_topoplotTFR(cfg, Fdiff_preAX_avg)
 
 
+%%
+% Select only subject pairs
+
+subsout = [3 8 9 10 13 16 21 26];
+subsel = ones(26,1);
+for i = 1:length(subsel)
+    if ismember(i, subsout)
+        subsel(i) = 0;
+    end
+end
+subsel = logical(subsel);
+
+
+%% Calculate difference for interaction
+
+for k = 1:size(F,2)
+    Fdiff{1,k} = F{1,k};
+    Fdiff{2,k} = F{2,k};
+    % (Xpost-Bpost) - (Xpre-Bpre)
+    Fdiff{1,k}.powspctrm = F{6,k}.powspctrm - F{5,k}.powspctrm;
+    Fdiff{2,k}.powspctrm = F{3,k}.powspctrm - F{2,k}.powspctrm;
+end
+
+
 %% Stats on MCCA data
 
 cfg                         = [];
@@ -54,9 +78,9 @@ neighbours                  = ft_prepare_neighbours(cfg, F{1,1});
 
 cfg                         = [];
 cfg.channel                 = {'all'};
-cfg.parameter               = 'avg';
+cfg.parameter               = 'powspctrm';
 cfg.neighbours              = neighbours;
-cfg.frequency               = [8 12];
+cfg.frequency               = [3 7];
 cfg.avgoverfreq             = 'yes';
 cfg.latency                 = 'all';
 cfg.method                  = 'montecarlo';
@@ -72,7 +96,7 @@ cfg.alpha                   = 0.05;
 cfg.correcttail             = 'prob';
 cfg.numrandomization        = 1000;
 
-Nsubj  = size(F,2);
+Nsubj  = sum(subsel);
 design = zeros(2, Nsubj*2);
 design(1,:) = [1:Nsubj 1:Nsubj];
 design(2,:) = [ones(1,Nsubj) ones(1,Nsubj)*2];
@@ -82,8 +106,9 @@ cfg.uvar   = 1;
 cfg.ivar   = 2;
 
 % Testing within a 2x2 factor within subject anova framework
-stat_interactionAX    = ft_freqstatistics(cfg, Fdiff_preAX{:}, Fdiff_postAX{:});
-stat_interactionBX    = ft_freqstatistics(cfg, Fdiff_preBX{:}, Fdiff_postBX{:});
+stat_intXB      = ft_freqstatistics(cfg, Fdiff{1,subsel}, Fdiff{2,subsel});
+stat_postXB     = ft_freqstatistics(cfg, F{6, subsel}, F{5, subsel});
+stat_preXB      = ft_freqstatistics(cfg, F{3, subsel}, F{2, subsel});
 
 
 cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_interactionAX)

@@ -1,0 +1,29 @@
+----------------------------------------
+Begin PBS Prologue Fri Mar 26 15:52:11 CET 2021 1616770331
+Job ID:		   42273144.dccn-l029.dccn.nl
+Username:	   renter
+Group:		   control
+Asked resources:   walltime=72:00:00,mem=40gb,nodes=1,neednodes=1
+Queue:		   interactive
+Nodes:		   dccn-c026.dccn.nl
+----------------------------------------
+Limiting memory+swap to 43486543872 bytes ...
+End PBS Prologue Fri Mar 26 15:52:11 CET 2021 1616770331
+----------------------------------------
+New Walltime: 01:15:47:22
+Job info started...
+MATLAB is selecting SOFTWARE OPENGL rendering.
+----------------------------------------
+Begin PBS Epilogue Mon Mar 29 10:23:18 CEST 2021 1617006198
+Job ID:		   42273144.dccn-l029.dccn.nl
+Job Exit Code:     0
+Username:	   renter
+Group:		   control
+Job Name:	   MATLAB
+Session:	   7543
+Asked resources:   walltime=72:00:00,mem=40gb,nodes=1,neednodes=1
+Used resources:	   cput=03:25:12,walltime=65:31:02,mem=6797393920b
+Queue:		   interactive
+Nodes:		   dccn-c026.dccn.nl
+End PBS Epilogue Mon Mar 29 10:23:18 CEST 2021 1617006198
+----------------------------------------
