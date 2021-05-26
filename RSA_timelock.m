@@ -202,25 +202,31 @@ colormap(flipud(brewermap(64,'RdBu')))
 
 %% RSA based on MCCA
 
+%ignSub = [4, 10, 12, 20, 30, 32];
+ignSub = [11, 16, 19, 20]; % after correcting subject trials, accounting for pairs
 % Run for each subject
 for m = 1:numel(subjects)
-    subj = subjects{m};
-    %qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
-    %qsubfeval('rt_mcca', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); % rt_mytimelockv3 includes hilbert
-    %qsubfeval('rt_mcca_ERP', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
-    %qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
-    qsubfeval('rt_sensorlevelanalysis', subj, 'saveflag', '/project/3012026.13/jansch/', 'type', 'timelock123', 'memreq', (1024^3)*12, 'timreq', 60*60)
+    if ~ismember(m, ignSub)
+        subj = subjects{m};
+        %qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
+        qsubfeval('rt_mcca', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); % rt_mytimelockv3 includes hilbert
+        %qsubfeval('rt_mcca_ERP', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+        %qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+        %qsubfeval('rt_sensorlevelanalysis', subj, 'saveflag', '/project/3012026.13/jansch/', 'type', 'tfr', 'poscorrect', false, 'memreq', (1024^3)*12, 'timreq', 60*60)
+    end
 end
 
 % Collect data for group avg
-%suff = 'mcca_theta_rsm';
+suff = 'mcca_rsm.mat';
 %suff = 'mcca_alpha_rsm';
 %suff = 'mcca_ERP';
 %suff = 'mcca_FREQ';
-suff = 'tfr.mat';
+%suff = 'timelock.mat';
 %suff = '123timelock123.mat';
-%rt_collect_rsm(suff)
+rt_collect_rsm(suff)
 %rt_collect_FREQ(suff)
+%rt_collectdata(suff, '')
+suff = 'tfr.mat';
 rt_collectdata(suff, 'theta')
 rt_collectdata(suff, 'alpha')
 rt_collectdata(suff, 'beta')

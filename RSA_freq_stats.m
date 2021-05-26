@@ -112,9 +112,10 @@ stat_preXB      = ft_freqstatistics(cfg, F{3, subsel}, F{2, subsel});
 
 
 cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_interactionAX)
-cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_interactionAX)
+cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat{10})
 
-cfg = []; cfg.xlim = [0.5 1.0]; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_topoplotTFR(cfg, stat_interactionAX)
+cfg = [];cfg.comment = 'no'; cfg.xlim = [0.45 1.1]; cfg.ylim = [10 10]; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_topoplotTFR(cfg, stat{12})
+set(gcf,'color','w');
 
 %% Cluster plot of stats
 

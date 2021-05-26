@@ -301,8 +301,8 @@ cfg.clusterstatistic        = 'maxsum';
 cfg.minnbchan               = 2;
 cfg.tail                    = 0;
 cfg.clustertail             = 0;
-cfg.alpha                   = 0.05;
-cfg.correcttail             = 'prob';
+cfg.alpha                   = 0.025;
+cfg.correcttail             = 'alpha';
 cfg.numrandomization        = 1000;
 
 Nsubj  = size(T,2);
@@ -314,16 +314,20 @@ cfg.design = design;
 cfg.uvar   = 1;
 cfg.ivar   = 2;
 
-%stat_ABpost_ABpre    = ft_timelockstatistics(cfg, T{17,:}, T{2,:});
-%stat_AXpost_AXpre    = ft_timelockstatistics(cfg, T{18,:}, T{3,:});
+stat_BXpost_BXpre    = ft_timelockstatistics(cfg, T{20,:}, T{8,:});
+stat_AB_BX_int    = ft_timelockstatistics(cfg, Tdiff_post{:}, Tdiff_pre{:});
 
 % Testing within a 2x2 factor within subject anova framework
 % AB-AX(pre) compared to AB-AX(post)
 stat_interactionAX    = ft_timelockstatistics(cfg, Tdiff_preAX{:}, Tdiff_postAX{:});
 stat_interactionBX    = ft_timelockstatistics(cfg, Tdiff_preBX{:}, Tdiff_postBX{:});
 
-cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat{11})
-cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_postXB)
+cfg = []; cfg.comment = 'no'; cfg.parameter = 'stat'; cfg.xlim = [0.04 0.26];cfg.layout = 'CTF275_helmet.mat'; ft_topoplotER(cfg, stat_BXpost_BXpre)
+set(gcf,'color','w');
+cfg = []; cfg.comment = 'no'; cfg.parameter = 'stat';cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_BXpost_BXpre)
+set(gcf,'color','w');
+cfg = []; cfg.toi = [0.15];cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_BXpost_BXpre)
+set(gcf,'color','w');
 
 
 %% Cluster plot of stats

@@ -89,10 +89,12 @@ cfg.uvar                = 2;
 % 4 Apost
 % 5 Bpost
 % 6 Xpost
-cmb = {'Apost - Apre', 'Bpost - Bpre', 'Xpost - Xpre', 'Xpre - Apre', 'Xpre - Bpre', ...
+cmb = {'Apre', 'Bpre', 'Xpre', 'Apost', 'Bpost', 'Xpost'};
+cmbstat = {'Apost - Apre', 'Bpost - Bpre', 'Xpost - Xpre', 'Xpre - Apre', 'Xpre - Bpre', ...
     'Xpost - Apost','Xpost - Bpost', '(Bpost-Apost) - (Bpre-Apre)', ...
     '(Xpost-Bpost) - (Xpre-Bpre)', ...
-    '(Xpost-Apost) - (Xpre-Apre)'};
+    '(Xpost-Apost) - (Xpre-Apre)', ...
+    'Xpre - ABpre', 'Xpost - ABpost', '(Xpost-ABpost) - (Xpre-ABpre)'};
 if istimelock
   savename = '';
   % Apost - Apre
@@ -113,6 +115,7 @@ if istimelock
   % interaction (Bpost-Apost) - (Bpre-Apre)
   % interaction (Xpost-Bpost) - (Xpre-Bpre)
   % interaction (Xpost-Apost) - (Xpre-Apre)
+  % interaction (Xpost-ABpost) - (Xpre-ABpre)
   for k = 1:size(F,2)
     Fdiff{1,k} = F{1,k};
     Fdiff{2,k} = F{2,k};
@@ -120,6 +123,12 @@ if istimelock
     Fdiff{4,k} = F{4,k};
     Fdiff{5,k} = F{5,k};
     Fdiff{6,k} = F{6,k};
+    Fdiff{7,k} = F{6,k}; % Xpre - ABpre
+    Fdiff{8,k} = F{6,k}; % Xpost - ABpost
+    F_AB{1,k} = F{1,k}; % pre
+    F_AB{2,k} = F{4,k}; % post
+    F_AB{1,k}.avg = (F{1,k}.avg + F{2,k}.avg)./2;
+    F_AB{2,k}.avg = (F{4,k}.avg + F{5,k}.avg)./2;
     % (Bpost-Apost) - (Bpre-Apre)
     Fdiff{1,k}.avg = F{5,k}.avg - F{4,k}.avg;
     Fdiff{2,k}.avg = F{2,k}.avg - F{1,k}.avg;
@@ -129,6 +138,9 @@ if istimelock
     % (Xpost-Apost) - (Xpre-Apre)
     Fdiff{5,k}.avg = F{6,k}.avg - F{4,k}.avg;
     Fdiff{6,k}.avg = F{3,k}.avg - F{1,k}.avg;
+    % (Xpost-ABpost) - (Xpre-ABpre)
+    Fdiff{7,k}.avg = F{6,k}.avg - F_AB{2,k}.avg;
+    Fdiff{8,k}.avg = F{3,k}.avg - F_AB{1,k}.avg;
   end
   % (Bpost-Apost) - (Bpre-Apre)
   stat{8} = ft_timelockstatistics(cfg, Fdiff{1,:}, Fdiff{2,:});
@@ -136,6 +148,13 @@ if istimelock
   stat{9} = ft_timelockstatistics(cfg, Fdiff{3,:}, Fdiff{4,:});
   % (Xpost-Apost) - (Xpre-Apre)
   stat{10} = ft_timelockstatistics(cfg, Fdiff{5,:}, Fdiff{6,:});
+  
+  % Xpre - ABpre
+  stat{11} = ft_timelockstatistics(cfg, F{3,:}, F_AB{1,:});
+  % Xpost - ABpost
+  stat{12} = ft_timelockstatistics(cfg, F{6,:}, F_AB{2,:});
+  % (Xpost-ABpost) - (Xpre-ABpre)
+  stat{13} = ft_timelockstatistics(cfg, Fdiff{7,:}, Fdiff{8,:});
   
 elseif isfreq
   cfg.parameter = 'powspctrm';
@@ -175,6 +194,7 @@ elseif isfreq
   % interaction (Bpost-Apost) - (Bpre-Apre)
   % interaction (Xpost-Bpost) - (Xpre-Bpre)
   % interaction (Xpost-Apost) - (Xpre-Apre)
+  % interaction (Xpost-ABpost) - (Xpre-ABpre)
   for k = 1:size(F,2)
     Fdiff{1,k} = F{1,k};
     Fdiff{2,k} = F{2,k};
@@ -182,6 +202,12 @@ elseif isfreq
     Fdiff{4,k} = F{4,k};
     Fdiff{5,k} = F{5,k};
     Fdiff{6,k} = F{6,k};
+    Fdiff{7,k} = F{6,k}; % Xpre - ABpre
+    Fdiff{8,k} = F{6,k}; % Xpost - ABpost
+    F_AB{1,k} = F{1,k}; % pre
+    F_AB{2,k} = F{4,k}; % post
+    F_AB{1,k}.powspctrm = (F{1,k}.powspctrm + F{2,k}.powspctrm)./2;
+    F_AB{2,k}.powspctrm = (F{4,k}.powspctrm + F{5,k}.powspctrm)./2;
     % (Bpost-Apost) - (Bpre-Apre)
     Fdiff{1,k}.powspctrm = F{5,k}.powspctrm - F{4,k}.powspctrm;
     Fdiff{2,k}.powspctrm = F{2,k}.powspctrm - F{1,k}.powspctrm;
@@ -191,6 +217,9 @@ elseif isfreq
     % (Xpost-Apost) - (Xpre-Apre)
     Fdiff{5,k}.powspctrm = F{6,k}.powspctrm - F{4,k}.powspctrm;
     Fdiff{6,k}.apowspctrm = F{3,k}.powspctrm - F{1,k}.powspctrm;
+    % (Xpost-ABpost) - (Xpre-ABpre)
+    Fdiff{7,k}.powspctrm = F{6,k}.powspctrm - F_AB{2,k}.powspctrm;
+    Fdiff{8,k}.powspctrm = F{3,k}.powspctrm - F_AB{1,k}.powspctrm;
   end
   % (Bpost-Apost) - (Bpre-Apre)
   stat{8} = ft_freqstatistics(cfg, Fdiff{1,:}, Fdiff{2,:});
@@ -198,7 +227,14 @@ elseif isfreq
   stat{9} = ft_freqstatistics(cfg, Fdiff{3,:}, Fdiff{4,:});
   % (Xpost-Apost) - (Xpre-Apre)
   stat{10} = ft_freqstatistics(cfg, Fdiff{5,:}, Fdiff{6,:});
+  
+  % Xpre - ABpre
+  stat{11} = ft_freqstatistics(cfg, F{3,:}, F_AB{1,:});
+  % Xpost - ABpost
+  stat{12} = ft_freqstatistics(cfg, F{6,:}, F_AB{2,:});
+  % (Xpost-ABpost) - (Xpre-ABpre)
+  stat{13} = ft_freqstatistics(cfg, Fdiff{7,:}, Fdiff{8,:});
 end
 
-save(sprintf(strcat('groupdata', savename, '_%s'),suff), 'stat', 'cmb', 'subj');
+save(sprintf(strcat('groupdata', savename, '_%s'),suff), 'stat', 'cmbstat', 'F', 'cmb', 'subj');
 
