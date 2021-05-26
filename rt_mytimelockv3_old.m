@@ -1,20 +1,8 @@
 function [my_data] = rt_mytimelockv3(root_dir, subj, varargin)
 
-
 % load data, remove bad trials and filter
 load(fullfile(root_dir, [subj,'_dataclean.mat']), 'dataclean');
 
-%% Some subjects have an additional anomalous trial that needs to be rejected
-
-probSubs = {'sub-007'; 'sub-013'; 'sub-016'; 'sub-036'; 'sub-038'};
-probTrials = [388, 107, 296, 296, 103];
-
-if any(strcmp(probSubs, subj))
-    subIdx = find(strcmp(probSubs, subj));
-    cfg = [];
-    cfg.trials = find(dataclean.trialinfo(:,1) ~= probTrials(subIdx));
-    dataclean = ft_selectdata(cfg, dataclean);
-end
 
 %%
 % Recode trialinfo for linking events
@@ -33,15 +21,13 @@ end
 %%
 % do some preprocessing
 cfg         = ft_getopt(varargin, 'cfg_preproc', []);
-latency     = ft_getopt(varargin, 'latency', [-0.2 2-1./300]);
 if ~any(contains(fieldnames(struct(cfg)), 'filter'))
-  cfg.lpfilter   = 'yes';
-  cfg.lpfreq     = 35;
-  cfg.lpfilttype = 'firws';
-  %cfg.bpfilter  = 'yes';
+  %cfg.lpfilter = 'yes';
+  %cfg.lpfreq   = 35;
+  cfg.bpfilter  = 'yes';
   %cfg.bpfreq    = [3 7];
-  %cfg.bpfreq    = [8 12];
-  %cfg.bpfilttype = 'firws';
+  cfg.bpfreq    = [8 12];
+  cfg.lpfilttype = 'firws';
   %cfg.hilbert    = 'abs';
 end
 cfg.trials  = find(dataclean.trialinfo(:,5)==1);
@@ -76,7 +62,7 @@ data_post_tl     = ft_timelockanalysis(cfg, data_post_tl);
 
 % prune the epochs
 cfg              = [];
-cfg.latency      = latency; %[0 2.0];
+cfg.latency      = [-0.2 2]; %[0 2.0];
 data_pre_tl      = ft_selectdata(cfg,data_pre_tl);
 data_post_tl     = ft_selectdata(cfg,data_post_tl);
 

@@ -132,7 +132,7 @@ for k = 1:size(C,3)
 end
 
 save_dir = '/project/3012026.13/jansch';
-save(fullfile(save_dir, sprintf('%s_mcca_alpha_rsm', subj)), 'tlck', 'cmb');
+save(fullfile(save_dir, sprintf('%s_mcca_rsm', subj)), 'tlck', 'cmb');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % subfunctions

@@ -2,6 +2,8 @@
 %%
 addpath /home/common/matlab/fieldtrip/
 addpath /home/common/matlab/fieldtrip/qsub/
+addpath /home/common/matlab/fieldtrip/private/
+addpath /home/common/matlab/fieldtrip/scripts_source_connectivity/
 addpath /project/3012026.13/scripts_RT/
 ft_defaults
 

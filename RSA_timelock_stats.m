@@ -83,6 +83,28 @@ end
 
 keep allDataRSApost allDataRSApre ignSub subjects save_dir root_dir
 
+%%
+% Select only subject pairs
+
+subsout = [3 8 9 10 13 16 21 26];
+subsel = ones(26,1);
+for i = 1:length(subsel)
+    if ismember(i, subsout)
+        subsel(i) = 0;
+    end
+end
+subsel = logical(subsel);
+
+%% Calculate difference for interaction
+
+for k = 1:size(F,2)
+    Fdiff{1,k} = F{1,k};
+    Fdiff{2,k} = F{2,k};
+    % (Xpost-Bpost) - (Xpre-Bpre)
+    Fdiff{1,k}.avg = F{6,k}.avg - F{5,k}.avg;
+    Fdiff{2,k}.avg = F{3,k}.avg - F{2,k}.avg;
+end
+
 
 %% Cluster based stats across subjects (within groups)
 
@@ -91,7 +113,7 @@ cfg.method                  = 'template';
 cfg.template                = 'CTF275_neighb.mat';               
 cfg.layout                  = 'CTF275_helmet.mat';                     
 cfg.feedback                = 'no';                            
-neighbours                  = ft_prepare_neighbours(cfg, allDataRSApre{1}); 
+neighbours                  = ft_prepare_neighbours(cfg, F{1,1}); 
 
 cfg                         = [];
 cfg.channel                 = {'all'};
@@ -110,7 +132,7 @@ cfg.alpha                   = 0.05;
 cfg.correcttail             = 'prob';
 cfg.numrandomization        = 1000;
 
-Nsubj  = length(allDataRSApre);
+Nsubj  = sum(subsel);
 design = zeros(2, Nsubj*2);
 design(1,:) = [1:Nsubj 1:Nsubj];
 design(2,:) = [ones(1,Nsubj) ones(1,Nsubj)*2];
@@ -119,8 +141,12 @@ cfg.design = design;
 cfg.uvar   = 1;
 cfg.ivar   = 2;
 
-cfg.parameter       = 'narinsight';
-stat_nar_prepost    = ft_timelockstatistics(cfg, allDataRSApre{:}, allDataRSApost{:});
+cfg.parameter       = 'avg';
+stat_intXB    = ft_timelockstatistics(cfg, Fdiff{1,subsel}, Fdiff{2,subsel});
+stat_postXB    = ft_timelockstatistics(cfg, F{6, subsel}, F{5, subsel});
+stat_preXB    = ft_timelockstatistics(cfg, F{3, subsel}, F{2, subsel});
+
+
 % cfg.parameter       = 'vis1';
 % stat_vis            = ft_timelockstatistics(cfg, allDataRSAorg{:}, allDataRSAperm{:});
 % cfg.parameter       = 'narinsight';
@@ -275,8 +301,8 @@ cfg.clusterstatistic        = 'maxsum';
 cfg.minnbchan               = 2;
 cfg.tail                    = 0;
 cfg.clustertail             = 0;
-cfg.alpha                   = 0.05;
-cfg.correcttail             = 'prob';
+cfg.alpha                   = 0.025;
+cfg.correcttail             = 'alpha';
 cfg.numrandomization        = 1000;
 
 Nsubj  = size(T,2);
@@ -288,16 +314,20 @@ cfg.design = design;
 cfg.uvar   = 1;
 cfg.ivar   = 2;
 
-%stat_ABpost_ABpre    = ft_timelockstatistics(cfg, T{17,:}, T{2,:});
-%stat_AXpost_AXpre    = ft_timelockstatistics(cfg, T{18,:}, T{3,:});
+stat_BXpost_BXpre    = ft_timelockstatistics(cfg, T{20,:}, T{8,:});
+stat_AB_BX_int    = ft_timelockstatistics(cfg, Tdiff_post{:}, Tdiff_pre{:});
 
 % Testing within a 2x2 factor within subject anova framework
 % AB-AX(pre) compared to AB-AX(post)
 stat_interactionAX    = ft_timelockstatistics(cfg, Tdiff_preAX{:}, Tdiff_postAX{:});
 stat_interactionBX    = ft_timelockstatistics(cfg, Tdiff_preBX{:}, Tdiff_postBX{:});
 
-cfg = []; cfg.parameter = 'stat'; cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_interaction)
-cfg = []; cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_interaction)
+cfg = []; cfg.comment = 'no'; cfg.parameter = 'stat'; cfg.xlim = [0.04 0.26];cfg.layout = 'CTF275_helmet.mat'; ft_topoplotER(cfg, stat_BXpost_BXpre)
+set(gcf,'color','w');
+cfg = []; cfg.comment = 'no'; cfg.parameter = 'stat';cfg.layout = 'CTF275_helmet.mat'; ft_multiplotER(cfg, stat_BXpost_BXpre)
+set(gcf,'color','w');
+cfg = []; cfg.toi = [0.15];cfg.parameter = 'stat'; cfg.alpha = 0.05; cfg.layout = 'CTF275_helmet.mat'; ft_clusterplot(cfg, stat_BXpost_BXpre)
+set(gcf,'color','w');
 
 
 %% Cluster plot of stats

@@ -4,6 +4,7 @@
 addpath /home/common/matlab/fieldtrip/
 addpath /home/common/matlab/fieldtrip/qsub/
 addpath /project/3012026.13/scripts_RT/
+%addpath /project/3012026.13/scripts_RT/Scripts_MCCA_Module
 ft_defaults
 
 root_dir     = '/project/3012026.13/processed/';
@@ -201,22 +202,34 @@ colormap(flipud(brewermap(64,'RdBu')))
 
 %% RSA based on MCCA
 
+%ignSub = [4, 10, 12, 20, 30, 32];
+ignSub = [11, 16, 19, 20]; % after correcting subject trials, accounting for pairs
 % Run for each subject
 for m = 1:numel(subjects)
-    subj = subjects{m};
-    %qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
-    %qsubfeval('rt_mcca', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); % rt_mytimelockv3 includes hilbert
-    %qsubfeval('rt_mcca_ERP', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
-    qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+    if ~ismember(m, ignSub)
+        subj = subjects{m};
+        %qsubfeval('rt_mcca', subj, 'hilbert', 'abs', 'memreq', (1024^3)*12, 'timreq', 60*60);
+        qsubfeval('rt_mcca', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); % rt_mytimelockv3 includes hilbert
+        %qsubfeval('rt_mcca_ERP', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+        %qsubfeval('rt_mcca_FREQ', subj, 'memreq', (1024^3)*12, 'timreq', 60*60); 
+        %qsubfeval('rt_sensorlevelanalysis', subj, 'saveflag', '/project/3012026.13/jansch/', 'type', 'tfr', 'poscorrect', false, 'memreq', (1024^3)*12, 'timreq', 60*60)
+    end
 end
 
 % Collect data for group avg
-%suff = 'mcca_theta_rsm';
+suff = 'mcca_rsm.mat';
 %suff = 'mcca_alpha_rsm';
 %suff = 'mcca_ERP';
-suff = 'mcca_FREQ';
-%rt_collect_rsm(suff)
-rt_collect_FREQ(suff)
+%suff = 'mcca_FREQ';
+%suff = 'timelock.mat';
+%suff = '123timelock123.mat';
+rt_collect_rsm(suff)
+%rt_collect_FREQ(suff)
+%rt_collectdata(suff, '')
+suff = 'tfr.mat';
+rt_collectdata(suff, 'theta')
+rt_collectdata(suff, 'alpha')
+rt_collectdata(suff, 'beta')
 
 % Load the aggregated data
 load('/project/3012026.13/jansch/groupdata_mcca_theta_hilbert.mat')
@@ -285,20 +298,21 @@ avgPredRSM = ft_timelockgrandaverage(cfg, groupPredRSM{:,1});
 
 
 %% Plot
-for x = 1:size(T, 2)
-    T{1,x}.avg = T{1,x}.trial;
-    T{4,x}.avg = T{4,x}.trial;
-end
 
-
-cfg = [];
-TApre = ft_timelockgrandaverage(cfg, T{1,:});
-TApost = ft_timelockgrandaverage(cfg, T{4,:});
+load('/project/3012026.13/jansch/groupdata_tlck.mat')
+tlck_stat = stat;
+load('/project/3012026.13/jansch/groupdata_theta_tfr.mat')
+theta_stat = stat;
+load('/project/3012026.13/jansch/groupdata_alpha_tfr.mat')
+alpha_stat = stat;
+clear stat
 
 cfg = [];
 cfg.layout = 'CTF275_helmet.mat';  
-%ft_multiplotER(cfg, avgPredRSM);
-ft_multiplotER(cfg, TApre,TApost);
+cfg.parameter = 'stat';
+cfg.xlim = [0.3 0.43];
+%ft_topoplotER(cfg, tlck_stat{1});
+ft_topoplotTFR(cfg, theta_stat{1});
 
 %% Plot RSA based on MCCA results
 
