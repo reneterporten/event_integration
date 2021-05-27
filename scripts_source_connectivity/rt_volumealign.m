@@ -9,7 +9,7 @@ end
 mripath     = ft_getopt(varargin, 'cfgpreproc', fullfile('/project/3012026.13/anatomy/', subj, '/preproc/', strcat(subj, '_mri.mgz')));
 saveflag    = ft_getopt(varargin, 'saveflag', true);
 savepath    = ft_getopt(varargin, 'savepath', '/project/3012026.13/jansch/');
-savename    = ft_getopt(varargin, 'savename', 'mri'); 
+savename    = ft_getopt(varargin, 'savename', 'mrialigned'); 
 
 
 %% Align and segment MRI
