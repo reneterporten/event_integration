@@ -51,20 +51,26 @@ cfg.trials  = find(dataclean.trialinfo(:,5)==2);
 data_post   = ft_preprocessing(cfg, dataclean);
 clear dataclean;
 
-cfg              = [];
-cfg.feedback     = 'no';
-cfg.method       = 'template';
-cfg.template     = 'CTF275_neighb.mat';
-cfg.planarmethod = 'sincos';
-cfg.channel      = {'MEG'};
-cfg.trials       = 'all';
-cfg.neighbours   = ft_prepare_neighbours(cfg, data_pre);
-
-% compute synthetic planar gradient
-data_pre_tl      = ft_megplanar(cfg, data_pre);
-data_post_tl     = ft_megplanar(cfg, data_post);
-nstory           = max(unique(data_post.trialinfo(:,4)));
-clear data_pre data_post;
+doplanar = ft_getopt(varargin, 'doplanar', 1);
+if doplanar
+  cfg              = [];
+  cfg.feedback     = 'no';
+  cfg.method       = 'template';
+  cfg.template     = 'CTF275_neighb.mat';
+  cfg.planarmethod = 'sincos';
+  cfg.channel      = {'MEG'};
+  cfg.trials       = 'all';
+  cfg.neighbours   = ft_prepare_neighbours(cfg, data_pre);
+  
+  % compute synthetic planar gradient
+  data_pre_tl      = ft_megplanar(cfg, data_pre);
+  data_post_tl     = ft_megplanar(cfg, data_post);
+  clear data_pre data_post;
+else
+  data_pre_tl = data_pre; clear data_pre;
+  data_post_tl = data_post; clear data_post;
+end
+nstory           = max(unique(data_post_tl.trialinfo(:,4)));
 
 % convert to a timelock representation
 cfg              = ft_getopt(varargin, 'cfg_timelock', []);

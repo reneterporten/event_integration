@@ -1,4 +1,4 @@
-function [mri] = rt_volumealign(cfg, varargin)
+function [mri] = rt_volumealign(subj, varargin)
 
 % Function to align the structural MRI for further analyses
 

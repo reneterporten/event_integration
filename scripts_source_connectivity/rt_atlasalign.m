@@ -1,4 +1,4 @@
-function [atlas_grid] = rt_atlasalign(cfg, varargin)
+function [atlas_grid] = rt_atlasalign(varargin)
 
 % Function to align the brainnetome atlas with a tempalte grid
 

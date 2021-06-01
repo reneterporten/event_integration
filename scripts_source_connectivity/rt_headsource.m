@@ -1,4 +1,4 @@
-function [headmodel, sourcemodel] = rt_headsource(cfg, varargin)
+function [headmodel, sourcemodel] = rt_headsource(subj, varargin)
 
 % Function to define the headmodel
 
