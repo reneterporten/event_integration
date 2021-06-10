@@ -1,4 +1,4 @@
-function rt_sourcelevelanalysis(cfg, varargin)
+function rt_sourcelevelanalysis(subj, varargin)
 
 % Function to define leadfield and estimate activity at source level
 % Returns connectivity measures between the hippocampus and the mPFC
@@ -8,6 +8,8 @@ if nargin<1 || isempty(subj)
 end
 
 saveflag    = ft_getopt(varargin, 'saveflag', false);
+savepath    = ft_getopt(varargin, 'savepath', '/project/3012026.13/jansch/');
+savename    = ft_getopt(varargin, 'savename', 'coh'); 
 headdata    = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', strcat(subj, '_headsource.mat')));
 cfgfreq     = ft_getopt(varargin, 'cfgfreq', []);
 load(headdata) % Loads headmodel and segmented mri
@@ -30,7 +32,13 @@ cfg.output      = 'fourier';
 cfg.foilim      = ft_getopt(cfgfreq, 'foilim', [5.5 5.5]);
 cfg.tapsmofrq   = ft_getopt(cfgfreq, 'tapsmofrq', 1.5);
 cfg.pad         = 4;
+cfg.trials      = 'all';
 freq            = ft_freqanalysis(cfg, data);
+% Per condition
+cfg.trials      = find(data.trialinfo(:,5) == 1); %pre
+freqpre         = ft_freqanalysis(cfg, data);
+cfg.trials      = find(data.trialinfo(:,5) == 2); %post
+freqpost        = ft_freqanalysis(cfg, data);
 
 
 %% Prepare leadfield
@@ -44,6 +52,7 @@ sourcemodel             = ft_prepare_leadfield(cfg);
 
 
 %% Source analysis
+
 freqcsd = ft_checkdata(freq, 'cmbstyle', 'fullfast');
 
 cfg                     = [];
@@ -59,6 +68,7 @@ cfg.dics.weightnorm     = 'unitnoisegain';
 
 source = ft_sourceanalysis(cfg, freqcsd);
 
+
 %% Apply atlas information to source level data
 
 atlasfile = fullfile('/project/3012026.13/jansch/brainnetome_atlas_grid');
@@ -71,16 +81,22 @@ cfg.parcellation    = 'tissue';
 cfg.method          = 'svd';
 cfg.numcomponent    = 5;
 vc                  = ft_virtualchannel(cfg, freq, source, atlas_grid);
+vcpre               = ft_virtualchannel(cfg, freqpre, source, atlas_grid);
+vcpost              = ft_virtualchannel(cfg, freqpost, source, atlas_grid);
 
 
 %% Connectivity analysis (coherence)
 
-vccsd = ft_checkdata(vc, 'cmbstyle', 'fullfast');
+vccsd       = ft_checkdata(vc, 'cmbstyle', 'fullfast');
+vcprecsd    = ft_checkdata(vcpre, 'cmbstyle', 'fullfast');
+vcpostcsd   = ft_checkdata(vcpost, 'cmbstyle', 'fullfast');
 
 cfg         = [];
 cfg.method  = 'coh'; % for instance
 cfg.complex = 'abs';
-coh         = ft_connectivityanalysis(cfg, vccsd); % or split trials per condition first
+coh         = ft_connectivityanalysis(cfg, vccsd); % pre
+cohpre      = ft_connectivityanalysis(cfg, vcprecsd); % pre
+cohpost     = ft_connectivityanalysis(cfg, vcpostcsd); % post
 
 % get the index grouping of the ROI's components
 label = coh.label;
@@ -93,25 +109,28 @@ end
 P = sparse(i2, (1:numel(label))', ones(numel(label),1));
 P = P./sum(P,2);
 
-cfg = [];
-cfg.method = 'mim';
+cfg         = [];
+cfg.method  = 'mim';
 cfg.indices = i2(:);
-mim = ft_connectivityanalysis(cfg, vccsd);
+mim         = ft_connectivityanalysis(cfg, vccsd);
 
-cfg = [];
-cfg.method = 'coh';
+cfg         = [];
+cfg.method  = 'coh';
 cfg.complex = 'absimag';
-imcoh = ft_connectivityanalysis(cfg, vccsd);
+imcoh       = ft_connectivityanalysis(cfg, vccsd);
 
-coh.cohspctrm = P*coh.cohspctrm*P';
+coh.cohspctrm   = P*coh.cohspctrm*P';
 imcoh.cohspctrm = P*imcoh.cohspctrm*P';
-coh.label = ulabel;
-imcoh.label = ulabel;
-mim.label = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
+coh.label       = ulabel;
+imcoh.label     = ulabel;
+mim.label       = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
 
 
+%% Save variables
 
-
-disp('done')
+if saveflag
+    fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
+    save(fname, 'cohpre', 'cohpost');
+end
 
 
