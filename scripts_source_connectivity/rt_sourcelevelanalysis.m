@@ -79,8 +79,38 @@ vccsd = ft_checkdata(vc, 'cmbstyle', 'fullfast');
 
 cfg         = [];
 cfg.method  = 'coh'; % for instance
-cfg.complex = 'imag';
+cfg.complex = 'abs';
 coh         = ft_connectivityanalysis(cfg, vccsd); % or split trials per condition first
+
+% get the index grouping of the ROI's components
+label = coh.label;
+for k = 1:numel(label)
+  label{k} = label{k}(1:end-4);
+end
+[ulabel, i1, i2] = unique(label, 'stable');
+
+% create a projection matrix for fast averaging
+P = sparse(i2, (1:numel(label))', ones(numel(label),1));
+P = P./sum(P,2);
+
+cfg = [];
+cfg.method = 'mim';
+cfg.indices = i2(:);
+mim = ft_connectivityanalysis(cfg, vccsd);
+
+cfg = [];
+cfg.method = 'coh';
+cfg.complex = 'absimag';
+imcoh = ft_connectivityanalysis(cfg, vccsd);
+
+coh.cohspctrm = P*coh.cohspctrm*P';
+imcoh.cohspctrm = P*imcoh.cohspctrm*P';
+coh.label = ulabel;
+imcoh.label = ulabel;
+mim.label = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
+
+
+
 
 disp('done')
 
