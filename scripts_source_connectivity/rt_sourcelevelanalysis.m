@@ -12,6 +12,7 @@ savepath    = ft_getopt(varargin, 'savepath', '/project/3012026.13/jansch/');
 savename    = ft_getopt(varargin, 'savename', 'coh'); 
 headdata    = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', strcat(subj, '_headsource.mat')));
 cfgfreq     = ft_getopt(varargin, 'cfgfreq', []);
+comp        = ft_getopt(varargin, 'comp', 'abxprepost');
 load(headdata) % Loads headmodel and segmented mri
 
 
@@ -34,11 +35,6 @@ cfg.tapsmofrq   = ft_getopt(cfgfreq, 'tapsmofrq', 1.5);
 cfg.pad         = 4;
 cfg.trials      = 'all';
 freq            = ft_freqanalysis(cfg, data);
-% Per condition
-cfg.trials      = find(data.trialinfo(:,5) == 1); %pre
-freqpre         = ft_freqanalysis(cfg, data);
-cfg.trials      = find(data.trialinfo(:,5) == 2); %post
-freqpost        = ft_freqanalysis(cfg, data);
 
 
 %% Prepare leadfield
@@ -80,57 +76,75 @@ cfg                 = [];
 cfg.parcellation    = 'tissue';
 cfg.method          = 'svd';
 cfg.numcomponent    = 5;
-vc                  = ft_virtualchannel(cfg, freq, source, atlas_grid);
-vcpre               = ft_virtualchannel(cfg, freqpre, source, atlas_grid);
-vcpost              = ft_virtualchannel(cfg, freqpost, source, atlas_grid);
+% Create virtual channels from conditions
+switch comp
+    case 'prepost'  
+        conditions  = [1 2]; %pre post
+        conlabel    = {'pre', 'post'};
+        for c = 1:numel(conditions)
+            % Select data from freq and create virtual channels
+            cfgsel          = [];
+            cfgsel.trials   = find(freq.trialinfo(:,5)==conditions(c));
+            freqsel         = ft_selectdata(cfgsel, freq);
+            vc{c}           = ft_virtualchannel(cfg, freqsel, source, atlas_grid);
+        end   
+    case 'abxprepost'
+        conditions  = [1 2 3 5 6 7]; % a b x (pre), a b x (post)
+        conlabel    = {'a_pre', 'b_pre', 'x_pre', 'a_post', 'b_post', 'x_post'};
+        for c = 1:numel(conditions)
+            % Select data from freq and create virtual channels
+            cfgsel          = [];
+            cfgsel.trials   = find(freq.trialinfo(:,2)==conditions(c));
+            freqsel         = ft_selectdata(cfgsel, freq);
+            vc{c}           = ft_virtualchannel(cfg, freqsel, source, atlas_grid);
+        end 
+end
 
 
 %% Connectivity analysis (coherence)
 
-vccsd       = ft_checkdata(vc, 'cmbstyle', 'fullfast');
-vcprecsd    = ft_checkdata(vcpre, 'cmbstyle', 'fullfast');
-vcpostcsd   = ft_checkdata(vcpost, 'cmbstyle', 'fullfast');
+for k = 1:numel(vc)
+    vccsd       = ft_checkdata(vc{k}, 'cmbstyle', 'fullfast');
 
-cfg         = [];
-cfg.method  = 'coh'; % for instance
-cfg.complex = 'abs';
-coh         = ft_connectivityanalysis(cfg, vccsd); % pre
-cohpre      = ft_connectivityanalysis(cfg, vcprecsd); % pre
-cohpost     = ft_connectivityanalysis(cfg, vcpostcsd); % post
+    cfg         = [];
+    cfg.method  = 'coh'; % for instance
+    cfg.complex = 'abs';
+    coh{k}         = ft_connectivityanalysis(cfg, vccsd);
 
-% get the index grouping of the ROI's components
-label = coh.label;
-for k = 1:numel(label)
-  label{k} = label{k}(1:end-4);
+    % get the index grouping of the ROI's components
+    label = coh{k}.label;
+    for j = 1:numel(label)
+      label{j} = label{j}(1:end-4);
+    end
+    [ulabel, i1, i2] = unique(label, 'stable');
+
+    % create a projection matrix for fast averaging
+    P = sparse(i2, (1:numel(label))', ones(numel(label),1));
+    P = P./sum(P,2);
+
+    cfg             = [];
+    cfg.method      = 'mim';
+    cfg.indices     = i2(:);
+    mim{k}          = ft_connectivityanalysis(cfg, vccsd);
+
+    cfg             = [];
+    cfg.method      = 'coh';
+    cfg.complex     = 'absimag';
+    imcoh{k}        = ft_connectivityanalysis(cfg, vccsd);
+
+    coh{k}.cohspctrm   = P*coh{k}.cohspctrm*P';
+    imcoh{k}.cohspctrm = P*imcoh{k}.cohspctrm*P';
+    coh{k}.label       = ulabel;
+    imcoh{k}.label     = ulabel;
+    mim{k}.label       = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
 end
-[ulabel, i1, i2] = unique(label, 'stable');
-
-% create a projection matrix for fast averaging
-P = sparse(i2, (1:numel(label))', ones(numel(label),1));
-P = P./sum(P,2);
-
-cfg         = [];
-cfg.method  = 'mim';
-cfg.indices = i2(:);
-mim         = ft_connectivityanalysis(cfg, vccsd);
-
-cfg         = [];
-cfg.method  = 'coh';
-cfg.complex = 'absimag';
-imcoh       = ft_connectivityanalysis(cfg, vccsd);
-
-coh.cohspctrm   = P*coh.cohspctrm*P';
-imcoh.cohspctrm = P*imcoh.cohspctrm*P';
-coh.label       = ulabel;
-imcoh.label     = ulabel;
-mim.label       = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
 
 
 %% Save variables
 
 if saveflag
     fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
-    save(fname, 'cohpre', 'cohpost');
+    save(fname, 'coh', 'imcoh', 'mim', 'conlabel');
 end
 
 
