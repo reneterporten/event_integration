@@ -137,6 +137,11 @@ for k = 1:numel(vc)
     coh{k}.label       = ulabel;
     imcoh{k}.label     = ulabel;
     mim{k}.label       = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
+    
+    % cfg appears to be huge and this is why it is deleted
+    coh{k}.cfg      = [];
+    imcoh{k}.cfg    = [];
+    mim{k}.cfg      = [];
 end
 
 
@@ -144,7 +149,7 @@ end
 
 if saveflag
     fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
-    save(fname, 'coh', 'imcoh', 'mim', 'conlabel');
+    save(fname, 'coh', 'imcoh', 'mim', 'conlabel', '-v7.3');
 end
 
 

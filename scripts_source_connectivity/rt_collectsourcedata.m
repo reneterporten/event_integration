@@ -2,13 +2,13 @@ function rt_collectsourcedata(suff, varargin)
 
 % Function that calculates statistics based on connectivity data
 
-saveflag    = ft_getopt(varargin, 'saveflag', false);
-redcomp     = ft_getopt(varargin, 'redcomp', true);
-savepath    = ft_getopt(varargin, 'savepath', '/project/3012026.13/jansch/');
-datadir     = ft_getopt(varargin, 'datadir', '/project/3012026.13/jansch/');
-savename    = ft_getopt(varargin, 'savename', 'coherence'); 
-suff        = ft_getopt(varargin, 'suff', '_coh.mat');
-atlasgrid   = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', 'brainnetome_atlas_grid.mat'));
+saveflag        = ft_getopt(varargin, 'saveflag', false);
+savepath        = ft_getopt(varargin, 'savepath', '/project/3012026.13/jansch/');
+datadir         = ft_getopt(varargin, 'datadir', '/project/3012026.13/jansch/');
+savename        = ft_getopt(varargin, 'savename', 'coherence'); 
+suff            = ft_getopt(varargin, 'suff', '_coh.mat');
+connectivity    = ft_getopt(varargin, 'connectivity', 'coh');
+atlasgrid       = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', 'brainnetome_atlas_grid.mat'));
 
 cd(datadir);
 load(atlasgrid)
@@ -22,51 +22,37 @@ cfg2.avgoverrpt = 'yes';
 d = dir(sprintf('sub*%s*',suff));
 for k = 1:numel(d)
   
-  disp(strcat('Subject:', int2str(k)))
+  disp(strcat('Subject aggregation:', int2str(k)))
     
-  data = load(d(k).name);
+  data_all = load(d(k).name);
+  switch connectivity
+      case 'coh'
+          data = data_all.coh;
+      case 'imcoh'
+          data = data_all.imcoh;
+      case 'mim'
+          data = data_all.mim;
+  end
+  conlabel = data_all.conlabel;
+  clear data_all
   
-  istimelock = ft_datatype(data.cohpre, 'timelock');
-  isfreq     = ft_datatype(data.cohpre, 'freq');
+  istimelock = ft_datatype(data{1}, 'timelock');
+  isfreq     = ft_datatype(data{1}, 'freq');
   
-  varname = fieldnames(data);
-  for m = 1:numel(varname)
-    disp(strcat('Data pre or post:', int2str(m)))
-    % In case coherence of components needs to be reduced to 1
-    % !!! Should include routine to check actual number of components in
-    % !!! the data
-    if redcomp
-        % Component reduction from 5 to 1
-        red_size        = size(data.(varname{m}).cohspctrm)/5;
-        red_cohspctrm   = zeros(red_size);
-        x_red           = 1;
-        y_red           = 1;
-        for y = 1:5:length(data.(varname{m}).cohspctrm)
-            for x = 1:5:length(data.(varname{m}).cohspctrm)
-                msnip       = data.(varname{m}).cohspctrm(x:(x+4), y:(y+4));
-                el_msnip    = numel(msnip);
-                msnip       = sum(sum(msnip))/el_msnip;
-                red_cohspctrm(x_red,y_red) = msnip;
-                x_red = x_red +1;
-            end
-            y_red = y_red +1;
-            x_red = 1;
-        end
-        data.(varname{m}).cohspctrm = red_cohspctrm;
-        data.(varname{m}).label     = atlas_grid.tissuelabel';
-    end
-    F{m,k} = data.(varname{m});
+  % Loop trough each condition
+  for m = 1:numel(data)
+    F{m,k} = data{m};
   end
   clear data
 end
 
 if istimelock
   for m = 1:size(F,1)
-    Fcoh{m} = ft_selectdata(cfg2, ft_appendtimelock(cfg1, F{:,m}));
+    Fcon{m} = ft_selectdata(cfg2, ft_appendtimelock(cfg1, F{:,m}));
   end
 elseif isfreq
    for m = 1:size(F,1) 
-     Fcoh{m} = ft_selectdata(cfg2, ft_appendfreq(cfg1, F{:,m}));
+     Fcon{m} = ft_selectdata(cfg2, ft_appendfreq(cfg1, F{:,m}));
    end
 end
 
@@ -81,7 +67,7 @@ end
 %% Save variables
 
 if saveflag
-    fname = fullfile(savepath, sprintf('%s_%s', 'groupdata', savename));
-    save(fname, 'Fcoh');
+    fname = fullfile(savepath, sprintf('%s_%s_%s', 'groupdata', connectivity, savename));
+    save(fname, 'Fcon', 'subj', 'conlabel', 'connectivity');
 end
 
