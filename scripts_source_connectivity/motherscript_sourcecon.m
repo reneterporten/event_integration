@@ -63,6 +63,13 @@ rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'imcoh')
 rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'mim')
 
 
+%% Plot ROIs of atlas
+
+roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
+rt_visualizeroi('atlasrois', roi_names, 'plotmethod', 'slice')
+rt_visualizeroi('atlasrois', 'all', 'plotmethod', 'slice')
+
+
 %% Plot coherence pre vs post, HC & mPFC
 
 load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_coherence.mat')); fname = 'cohspctrm';
