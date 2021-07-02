@@ -215,7 +215,7 @@ subplot(3,1,2);
 imagesc(Bpre_post); cax2=caxis;
 % X pre post
 subplot(3,1,3);
-imagesc(Bpre_post); cax3=caxis;
+imagesc(Xpre_post); cax3=caxis;
 
 subplot(3,1,1);caxis([min([cax1(1),cax2(1),cax3(1)]),max([cax1(2),cax2(2),cax3(1)])]); colorbar; title('A (pre vs post)')
 subplot(3,1,2);caxis([min([cax1(1),cax2(1),cax3(1)]),max([cax1(2),cax2(2),cax3(1)])]); colorbar; title('B (pre vs post)')

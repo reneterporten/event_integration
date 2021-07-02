@@ -1,4 +1,4 @@
-function rt_collectsourcedata(suff, varargin)
+function rt_collectsourcedata(varargin)
 
 % Function that calculates statistics based on connectivity data
 
@@ -9,6 +9,7 @@ savename        = ft_getopt(varargin, 'savename', 'coherence');
 suff            = ft_getopt(varargin, 'suff', '_coh.mat');
 connectivity    = ft_getopt(varargin, 'connectivity', 'coh');
 atlasgrid       = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', 'brainnetome_atlas_grid.mat'));
+method          = ft_getopt(varargin, 'method', 'avg'); % can also be 'stat'
 
 cd(datadir);
 load(atlasgrid)
@@ -47,13 +48,23 @@ for k = 1:numel(d)
 end
 
 if istimelock
-  for m = 1:size(F,1)
-    Fcon{m} = ft_selectdata(cfg2, ft_appendtimelock(cfg1, F{:,m}));
-  end
+    switch method
+        case 'avg'
+          for m = 1:size(F,1)
+            Fcon{m} = ft_selectdata(cfg2, ft_appendtimelock(cfg1, F{:,m}));
+          end
+        case 'stat'
+            % Do statistics
+    end
 elseif isfreq
-   for m = 1:size(F,1) 
-     Fcon{m} = ft_selectdata(cfg2, ft_appendfreq(cfg1, F{:,m}));
-   end
+    switch method
+        case 'avg'
+           for m = 1:size(F,1) 
+             Fcon{m} = ft_selectdata(cfg2, ft_appendfreq(cfg1, F{:,m}));
+           end
+        case 'stat'
+            % Do statistics
+    end
 end
 
 clear F
