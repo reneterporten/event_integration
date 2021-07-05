@@ -63,6 +63,27 @@ rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'imcoh')
 rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'mim')
 
 
+%% Calculate statistics
+
+roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
+rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names)
+
+% Visualize
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstats.mat'))
+Stats   = ones(Fcon{1,1}.orgdim);
+triang  = tril(Stats,-1);
+Stats   = zeros(Fcon{1,1}.orgdim);
+Probs   = zeros(Fcon{1,1}.orgdim);
+Stats(triang>0) = Fcon{2,1}.stat;
+Stats = Stats+Stats';
+Probs(triang>0) = Fcon{2,1}.prob;
+Probs = Probs+Probs';
+Probs(Probs > 0.05) = 1;
+imagesc(Stats)
+figure;
+imagesc(Probs)
+
+
 %% Plot ROIs of atlas
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
@@ -151,47 +172,6 @@ subplot(3,2,4);caxis([min(cax3(1),cax4(1)),max(cax3(2),cax4(2))]); colorbar; tit
 
 subplot(3,2,5);caxis([min(cax5(1),cax6(1)),max(cax5(2),cax5(2))]); colorbar; title('Xpre')
 subplot(3,2,6);caxis([min(cax5(1),cax6(1)),max(cax6(2),cax6(2))]); colorbar; title('Xpost')
-
-
-%% Statistics
-
-% load data A per subject
-condname    = 'X';
-fname       = 'cohspctrm';
-condidx     = [1 4; 2 5; 3 6];
-if condname == 'A'
-    row = 1;
-elseif condname == 'B'
-    row = 2;
-elseif condname == 'X'
-    row = 3;
-end
-for i = 1:length(subjects)
-    
-    disp(strcat('Subject triangulation:', int2str(i)))
-    load(fullfile('/project/3012026.13/jansch/',strcat(subjects{i}, '_coh.mat')))
-    Pre            = coh{condidx(row,1)}.(fname);
-    Post           = coh{condidx(row,2)}.(fname);
-    triang         = tril(Pre,-1);
-    dataPre(:,i)   = Pre(triang>0);
-    dataPost(:,i)  = Post(triang>0);
-
-end
-
-% en ook zo met B X pre en post
-
-nsubj       = length(subjects);
-cfg         = [];
-design      = [ones(1,nsubj) ones(1,nsubj)*2; 1:nsubj 1:nsubj];
-cfg.ivar    = 1;cfg.uvar=2;
-
-stat        = ft_statfun_depsamplesT(cfg, [dataPre dataPost], design);
-
-Tstat       = zeros(size(Pre));
-Tstat(triang>0) = stat.stat;
-
-statname = fullfile('/project/3012026.13/jansch/', sprintf('%s_%s_%s', 'Tstats', condname, fname));
-save(statname, 'Tstat', 'fname');
 
 
 %% Load and plot statistics -  Take sorted_idx from above
