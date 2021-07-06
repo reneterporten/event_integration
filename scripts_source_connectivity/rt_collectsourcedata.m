@@ -68,7 +68,7 @@ elseif isfreq
             end
         case 'stat'
             sorted_idx = get_sortedrois(F{1,1}.label, atlasrois);
-            Fcon = dostats(F, sorted_idx, fname);
+            Fcon = dostatsMC(F, sorted_idx, fname);
     end
 end
 
@@ -121,7 +121,7 @@ right_side  = idx(logical(rightidx));
 sorted_idx  = [left_side; flip(right_side)];
 
 
-function [stat] = dostats(Fdata, roiselection, fname)
+function [stat] = dostatsMC(Fdata, roiselection, fname)
 
 % Subfunction to perform statistical calculations
 
@@ -139,33 +139,73 @@ end
 % Do stats on specific contrasts
 nsubj       = size(Fdata, 2);
 cfg         = [];
-design      = [ones(1,nsubj) ones(1,nsubj)*2; 1:nsubj 1:nsubj];
+cfg.design  = [ones(1,nsubj) ones(1,nsubj)*2; 1:nsubj 1:nsubj];
 cfg.ivar    = 1;
 cfg.uvar    = 2;
-cfg.computecritval  = 'yes';
-cfg.computeprob     = 'yes';
 cfg.alpha           = 0.05;
+cfg.correcttail     = 'alpha';
 cfg.tail            = 0;
+cfg.correctm        = 'bonferroni';
+cfg.statistic       = 'depsamplesT';
+cfg.method          = 'montecarlo';
+cfg.parameter       = fname;
+cfg.numrandomization    = 1000;
 % A(post) - A(pre)
-for i = 1:size(Fdata, 2)
-    datapost(:,i) = Fdata{4,i}.(fname);
-    datapre(:,i)  = Fdata{1,i}.(fname);
-end
-stat{1,1}   = ft_statfun_depsamplesT(cfg, [datapost datapre], design);
+stat{1,1}   = ft_freqstatistics(cfg, Fdata{4,:}, Fdata{1,:});
 stat{1,1}.orgdim = orgsize;
 % B(post) - B(pre)
-for i = 1:size(Fdata, 2)
-    datapost(:,i) = Fdata{5,i}.(fname);
-    datapre(:,i)  = Fdata{2,i}.(fname);
-end
-stat{2,1}   = ft_statfun_depsamplesT(cfg, [datapost datapre], design);
+stat{2,1}   = ft_freqstatistics(cfg, Fdata{5,:}, Fdata{2,:});
 stat{2,1}.orgdim = orgsize;
 % X(post) - X(pre)
-for i = 1:size(Fdata, 2)
-    datapost(:,i) = Fdata{6,i}.(fname);
-    datapre(:,i)  = Fdata{3,i}.(fname);
-end
-stat{3,1}   = ft_statfun_depsamplesT(cfg, [datapost datapre], design);
+stat{3,1}   = ft_freqstatistics(cfg, Fdata{6,:}, Fdata{3,:});
 stat{3,1}.orgdim = orgsize;
+
+ 
+% function [stat] = dostats(Fdata, roiselection, fname)
+% 
+% % Subfunction to perform statistical calculations
+% 
+% orgsize = size(Fdata{1,1}.(fname)(roiselection, roiselection));
+% for i = 1:size(Fdata, 1)
+%     for j = 1:size(Fdata, 2)
+%         % Select data from ROIs
+%         Fdata{i, j}.(fname) = Fdata{i, j}.(fname)(roiselection, roiselection);
+%         % Select lower triangle
+%         trilsel = tril(Fdata{i, j}.(fname), -1);
+%         % Replace datafield with new data vector
+%         Fdata{i, j}.(fname) = Fdata{i, j}.(fname)(trilsel>0);
+%     end
+% end
+% % Do stats on specific contrasts
+% nsubj       = size(Fdata, 2);
+% cfg         = [];
+% design      = [ones(1,nsubj) ones(1,nsubj)*2; 1:nsubj 1:nsubj];
+% cfg.ivar    = 1;
+% cfg.uvar    = 2;
+% cfg.computecritval  = 'yes';
+% cfg.computeprob     = 'yes';
+% cfg.alpha           = 0.05;
+% cfg.tail            = 0;
+% % A(post) - A(pre)
+% for i = 1:size(Fdata, 2)
+%     datapost(:,i) = Fdata{4,i}.(fname);
+%     datapre(:,i)  = Fdata{1,i}.(fname);
+% end
+% stat{1,1}   = ft_statfun_depsamplesT(cfg, [datapost datapre], design);
+% stat{1,1}.orgdim = orgsize;
+% % B(post) - B(pre)
+% for i = 1:size(Fdata, 2)
+%     datapost(:,i) = Fdata{5,i}.(fname);
+%     datapre(:,i)  = Fdata{2,i}.(fname);
+% end
+% stat{2,1}   = ft_statfun_depsamplesT(cfg, [datapost datapre], design);
+% stat{2,1}.orgdim = orgsize;
+% % X(post) - X(pre)
+% for i = 1:size(Fdata, 2)
+%     datapost(:,i) = Fdata{6,i}.(fname);
+%     datapre(:,i)  = Fdata{3,i}.(fname);
+% end
+% stat{3,1}   = ft_statfun_depsamplesT(cfg, [datapost datapre], design);
+% stat{3,1}.orgdim = orgsize;
 
 

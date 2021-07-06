@@ -66,22 +66,32 @@ rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'mim')
 %% Calculate statistics
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
-rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names)
+%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names)
+rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names)
 
 % Visualize
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMC.mat'))
+FconMC = Fcon;
 load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstats.mat'))
 Stats   = ones(Fcon{1,1}.orgdim);
 triang  = tril(Stats,-1);
 Stats   = zeros(Fcon{1,1}.orgdim);
 Probs   = zeros(Fcon{1,1}.orgdim);
+ProbsMC  = zeros(Fcon{1,1}.orgdim);
 Stats(triang>0) = Fcon{2,1}.stat;
 Stats = Stats+Stats';
+
 Probs(triang>0) = Fcon{2,1}.prob;
 Probs = Probs+Probs';
-Probs(Probs > 0.05) = 1;
-imagesc(Stats)
-figure;
+%Probs(Probs > 0.05) = 1;
+
+ProbsMC(triang>0) = FconMC{2,1}.prob;
+ProbsMC = ProbsMC+ProbsMC';
+%ProbsMC(ProbsMC > 0.05) = 1;
+
 imagesc(Probs)
+figure;
+imagesc(ProbsMC)
 
 
 %% Plot ROIs of atlas
