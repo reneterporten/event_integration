@@ -66,38 +66,59 @@ rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'mim')
 %% Calculate statistics
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
-%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names)
-rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names)
+%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names 'compsel', 'all')
+rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names, 'compsel', 'all')
+%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMCsel', 'method', 'stat', 'atlasrois', roi_names)
 
 % Visualize
 load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMC.mat'))
 FconMC = Fcon;
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstats.mat'))
-Stats   = ones(Fcon{1,1}.orgdim);
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMCsel.mat'))
+FconMCsel = Fcon;
+clear Fcon
+
+Stats   = ones(FconMC{1,1}.orgdim);
 triang  = tril(Stats,-1);
-Stats   = zeros(Fcon{1,1}.orgdim);
-Probs   = zeros(Fcon{1,1}.orgdim);
-ProbsMC  = zeros(Fcon{1,1}.orgdim);
-Stats(triang>0) = Fcon{2,1}.stat;
+Stats   = zeros(FconMC{1,1}.orgdim);
+Probs   = zeros(FconMC{1,1}.orgdim);
+Stats(triang>0) = FconMC{3,1}.stat;
 Stats = Stats+Stats';
 
-Probs(triang>0) = Fcon{2,1}.prob;
+Probs(triang>0) = FconMC{3,1}.prob;
 Probs = Probs+Probs';
-%Probs(Probs > 0.05) = 1;
+Probsmasked = Probs;
+Probsmasked(Probs > 0.05) = 1;
 
-ProbsMC(triang>0) = FconMC{2,1}.prob;
-ProbsMC = ProbsMC+ProbsMC';
-%ProbsMC(ProbsMC > 0.05) = 1;
+%Label structure as reference
+labelmat = cell(FconMC{1,1}.orgdim);
+labelmat(triang>0)=FconMC{1,1}.complabel;
 
+imagesc(Stats)
+figure;
 imagesc(Probs)
 figure;
-imagesc(ProbsMC)
+imagesc(Probsmasked)
+
+% Create bar plot of selected comparisons
+barh(FconMCsel{1,1}.stat)
+yticks([1:1:numel(FconMCsel{1,1}.stat)])
+figure;
+barh(FconMCsel{2,1}.stat)
+yticks([1:1:numel(FconMCsel{2,1}.stat)])
+figure;
+barh(FconMCsel{3,1}.stat)
+yticks([1:1:numel(FconMCsel{3,1}.stat)])
+
+flippedlabels = flip(FconMCsel{1,1}.complabel);
+for i = 1:length(FconMCsel{1,1}.complabel)
+    disp(flippedlabels{i})
+end
 
 
 %% Plot ROIs of atlas
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
-rt_visualizeroi('atlasrois', roi_names, 'plotmethod', 'slice')
+rt_visualizeroi('atlasrois', roi_names, 'plotmethod', 'ortho')
 rt_visualizeroi('atlasrois', 'all', 'plotmethod', 'slice')
 
 

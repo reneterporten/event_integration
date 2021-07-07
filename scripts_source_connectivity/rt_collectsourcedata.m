@@ -9,8 +9,9 @@ savename        = ft_getopt(varargin, 'savename', 'coherence');
 suff            = ft_getopt(varargin, 'suff', '_coh.mat');
 connectivity    = ft_getopt(varargin, 'connectivity', 'coh');
 atlasgrid       = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', 'brainnetome_atlas_grid.mat'));
-atlasrois       = ft_getopt(varargin, 'atlasrois', 'all'); % Either all or cell array with ROIs
-method          = ft_getopt(varargin, 'method', 'avg'); % can also be 'stat'
+atlasrois       = ft_getopt(varargin, 'atlasrois', {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'}); % Either 'all' or cell array with ROIs
+method          = ft_getopt(varargin, 'method', 'stat'); % can also be 'stat'
+compsel         = ft_getopt(varargin, 'compsel', 'selection'); % can be 'all'
 
 cd(datadir);
 load(atlasgrid)
@@ -68,7 +69,7 @@ elseif isfreq
             end
         case 'stat'
             sorted_idx = get_sortedrois(F{1,1}.label, atlasrois);
-            Fcon = dostatsMC(F, sorted_idx, fname);
+            Fcon = dostatsMC(F, sorted_idx, fname, compsel);
     end
 end
 
@@ -121,19 +122,41 @@ right_side  = idx(logical(rightidx));
 sorted_idx  = [left_side; flip(right_side)];
 
 
-function [stat] = dostatsMC(Fdata, roiselection, fname)
+function [stat] = dostatsMC(Fdata, roiselection, fname, compsel)
 
 % Subfunction to perform statistical calculations
 
+% Create structure with labels for comparisons
+alllabels = Fdata{1,1}.label;
+labelmat = cell(numel(alllabels), numel(alllabels));
+for r = 1:size(labelmat,1)
+    for c = 1:size(labelmat,2)
+        labelmat{r, c} = [alllabels(r,1) alllabels(c,1)];
+    end
+end
 orgsize = size(Fdata{1,1}.(fname)(roiselection, roiselection));
 for i = 1:size(Fdata, 1)
     for j = 1:size(Fdata, 2)
         % Select data from ROIs
         Fdata{i, j}.(fname) = Fdata{i, j}.(fname)(roiselection, roiselection);
-        % Select lower triangle
-        trilsel = tril(Fdata{i, j}.(fname), -1);
-        % Replace datafield with new data vector
-        Fdata{i, j}.(fname) = Fdata{i, j}.(fname)(trilsel>0);
+        labelsel = labelmat(roiselection, roiselection);
+        % Either select lower triangle or specific selection
+        if strcmp(compsel, 'all')
+            trilsel = tril(Fdata{i, j}.(fname), -1);
+            % Replace datafield with new data vector
+            Fdata{i, j}.(fname) = Fdata{i, j}.(fname)(trilsel>0);
+            Fdata{i, j}.complabel= labelsel(trilsel>0);
+        elseif strcmp(compsel, 'selection')
+            % Select specific rows and put them into column vector
+            %left/right HC to left mPFC
+            HC_leftmPFC = Fdata{i, j}.(fname)(6:9,1:5);
+            label_leftmPFC = labelsel(6:9,1:5);
+            %left/right HC to right mPFC
+            HC_rightmPFC = Fdata{i, j}.(fname)(10:14,6:9);
+            label_rightmPFC = labelsel(10:14,6:9);
+            Fdata{i, j}.(fname)= [HC_leftmPFC(:); HC_rightmPFC(:)];
+            Fdata{i, j}.complabel= [label_leftmPFC(:); label_rightmPFC(:)];
+        end
     end
 end
 % Do stats on specific contrasts
@@ -153,12 +176,18 @@ cfg.numrandomization    = 1000;
 % A(post) - A(pre)
 stat{1,1}   = ft_freqstatistics(cfg, Fdata{4,:}, Fdata{1,:});
 stat{1,1}.orgdim = orgsize;
+stat{1,1}.roiselection = roiselection;
+stat{1,1}.complabel = Fdata{1,1}.complabel;
 % B(post) - B(pre)
 stat{2,1}   = ft_freqstatistics(cfg, Fdata{5,:}, Fdata{2,:});
 stat{2,1}.orgdim = orgsize;
+stat{2,1}.roiselection = roiselection;
+stat{2,1}.complabel = Fdata{1,1}.complabel;
 % X(post) - X(pre)
 stat{3,1}   = ft_freqstatistics(cfg, Fdata{6,:}, Fdata{3,:});
 stat{3,1}.orgdim = orgsize;
+stat{3,1}.roiselection = roiselection;
+stat{3,1}.complabel = Fdata{1,1}.complabel;
 
  
 % function [stat] = dostats(Fdata, roiselection, fname)
