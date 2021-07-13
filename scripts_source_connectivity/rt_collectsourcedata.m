@@ -10,7 +10,7 @@ suff            = ft_getopt(varargin, 'suff', '_coh.mat');
 connectivity    = ft_getopt(varargin, 'connectivity', 'coh');
 atlasgrid       = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', 'brainnetome_atlas_grid.mat'));
 atlasrois       = ft_getopt(varargin, 'atlasrois', {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'}); % Either 'all' or cell array with ROIs
-method          = ft_getopt(varargin, 'method', 'stat'); % can also be 'stat'
+method          = ft_getopt(varargin, 'method', 'avg'); % can also be 'stat'
 compsel         = ft_getopt(varargin, 'compsel', 'selection'); % can be 'all'
 
 cd(datadir);
@@ -37,7 +37,10 @@ for k = 1:numel(d)
           fname = 'cohspctrm';
       case 'mim'
           data = data_all.mim;
-          fname = 'cohspctrm';
+          fname = 'mimspctrm';
+      case 'pow'
+          data = data_all.pow;
+          fname = 'powspctrm';
   end
   conlabel = data_all.conlabel;
   clear data_all
@@ -56,16 +59,17 @@ if istimelock
     switch method
         case 'avg'
           for m = 1:size(F,1)
-            Fcon{m} = ft_selectdata(cfg2, ft_appendtimelock(cfg1, F{:,m})); % I think I need to switch the : with the m to avg over subs instead of cond
+            Fcon{m} = ft_selectdata(cfg2, ft_appendtimelock(cfg1, F{m,:})); 
           end
         case 'stat'
-            % Do statistics
+            sorted_idx = get_sortedrois(F{1,1}.label, atlasrois);
+            Fcon = dostatsMC(F, sorted_idx, fname, compsel);
     end
 elseif isfreq
     switch method
         case 'avg'
             for m = 1:size(F,1) 
-                Fcon{m} = ft_selectdata(cfg2, ft_appendfreq(cfg1, F{:,m}));
+                Fcon{m} = ft_selectdata(cfg2, ft_appendfreq(cfg1, F{m,:}));
             end
         case 'stat'
             sorted_idx = get_sortedrois(F{1,1}.label, atlasrois);

@@ -55,25 +55,42 @@ for subj = 1:length(subjects)
 end
 
 
-%% Estimate coherence
+%% Do source level anaylsis and estimate POWER
 
-suff = '_coh.mat';
-rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'coh')
-rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'imcoh')
-rt_collectsourcedata(suff, 'saveflag', true, 'connectivity', 'mim')
+for subj = 1:length(subjects)
+    
+    disp(strcat('Subject sourceanalysis:', int2str(subj)))
+    rt_sourcelevelanalysis(subjects{subj}, 'saveflag', true, 'method', 'freqpower', 'savename', 'pow')
+    disp(strcat('Subject sourceanalysis done:', int2str(subj)))
+    
+end
+
+
+%% Estimate average coherence
+
+rt_collectsourcedata('saveflag', true, 'connectivity', 'coh')
+rt_collectsourcedata('saveflag', true, 'connectivity', 'imcoh')
+rt_collectsourcedata('saveflag', true, 'connectivity', 'mim')
+
+
+%% Estimate average POWER
+
+rt_collectsourcedata('saveflag', true, 'connectivity', 'pow', 'suff', '_pow.mat', 'savename', 'power')
 
 
 %% Calculate statistics
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
 %rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names 'compsel', 'all')
-rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names, 'compsel', 'all')
-%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMCsel', 'method', 'stat', 'atlasrois', roi_names)
+rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'imcoh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names, 'compsel', 'all')
+%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'imcoh', 'savename', 'cohstatsMCsel', 'method', 'stat', 'atlasrois', roi_names)
 
-% Visualize
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMC.mat'))
+
+%% Visualize stats
+
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_cohstatsMC.mat'))
 FconMC = Fcon;
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMCsel.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_cohstatsMCsel.mat'))
 FconMCsel = Fcon;
 clear Fcon
 
@@ -124,9 +141,10 @@ rt_visualizeroi('atlasrois', 'all', 'plotmethod', 'slice')
 
 %% Plot coherence pre vs post, HC & mPFC
 
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_coherence.mat')); fname = 'cohspctrm';
+%load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_coherence.mat')); fname = 'cohspctrm';
 %load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_coherence.mat')); fname = 'cohspctrm';
-%load(fullfile('/project/3012026.13/jansch/', 'groupdata_mim_coherence.mat')); fname = 'mimspctrm';
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_mim_coherence.mat')); fname = 'mimspctrm';
+%load(fullfile('/project/3012026.13/jansch/', 'groupdata_pow_power.mat')); fname = 'powspctrm';
 
 % Regions that fall under the MPFC
 % A10m, A11m, A13, A14m, A32sg 
@@ -178,6 +196,7 @@ Xpost = abs(Xpost(:,sorted_idx));
 %% Plot figures
 
 figure;
+title('coherence')
 % A
 subplot(3,2,1);
 imagesc(Apre); cax1=caxis;%, [0 0.4])

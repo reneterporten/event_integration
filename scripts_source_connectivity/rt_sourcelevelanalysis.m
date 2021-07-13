@@ -13,6 +13,7 @@ savename    = ft_getopt(varargin, 'savename', 'coh');
 headdata    = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', strcat(subj, '_headsource.mat')));
 cfgfreq     = ft_getopt(varargin, 'cfgfreq', []);
 comp        = ft_getopt(varargin, 'comp', 'abxprepost');
+method      = ft_getopt(varargin, 'method', 'freqconnect');
 load(headdata) % Loads headmodel and segmented mri
 
 
@@ -104,52 +105,77 @@ end
 %% Connectivity analysis (coherence)
 
 for k = 1:numel(vc)
-    vccsd       = ft_checkdata(vc{k}, 'cmbstyle', 'fullfast');
+    switch method
+        case 'freqpower'
+            cfg     = [];
+            pow{k} = ft_freqdescriptives(cfg, vc{k});
+            
+            label = pow{k}.label;
+            for j = 1:numel(label)
+              label{j} = label{j}(1:end-4);
+            end
+            [ulabel, i1, i2] = unique(label, 'stable');
+            
+            P = sparse(i2, (1:numel(label))', ones(numel(label),1));
+            P = P./sum(P,2);
+            
+            pow{k}.powspctrm    = P*pow{k}.powspctrm;
+            pow{k}.label        = ulabel;
+            pow{k}.cfg          = [];
+        case 'freqconnect'
+            vccsd       = ft_checkdata(vc{k}, 'cmbstyle', 'fullfast');
 
-    cfg         = [];
-    cfg.method  = 'coh'; % for instance
-    cfg.complex = 'abs';
-    coh{k}         = ft_connectivityanalysis(cfg, vccsd);
+            cfg         = [];
+            cfg.method  = 'coh'; % for instance
+            cfg.complex = 'abs';
+            coh{k}      = ft_connectivityanalysis(cfg, vccsd);
 
-    % get the index grouping of the ROI's components
-    label = coh{k}.label;
-    for j = 1:numel(label)
-      label{j} = label{j}(1:end-4);
+            % get the index grouping of the ROI's components
+            label = coh{k}.label;
+            for j = 1:numel(label)
+              label{j} = label{j}(1:end-4);
+            end
+            [ulabel, i1, i2] = unique(label, 'stable');
+
+            % create a projection matrix for fast averaging
+            P = sparse(i2, (1:numel(label))', ones(numel(label),1));
+            P = P./sum(P,2);
+
+            cfg             = [];
+            cfg.method      = 'mim';
+            cfg.indices     = i2(:);
+            mim{k}          = ft_connectivityanalysis(cfg, vccsd);
+
+            cfg             = [];
+            cfg.method      = 'coh';
+            cfg.complex     = 'absimag';
+            imcoh{k}        = ft_connectivityanalysis(cfg, vccsd);
+
+            coh{k}.cohspctrm   = P*coh{k}.cohspctrm*P';
+            imcoh{k}.cohspctrm = P*imcoh{k}.cohspctrm*P';
+            coh{k}.label       = ulabel;
+            imcoh{k}.label     = ulabel;
+            mim{k}.label       = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
+
+            % cfg appears to be huge and this is why it is deleted
+            coh{k}.cfg      = [];
+            imcoh{k}.cfg    = [];
+            mim{k}.cfg      = [];
     end
-    [ulabel, i1, i2] = unique(label, 'stable');
-
-    % create a projection matrix for fast averaging
-    P = sparse(i2, (1:numel(label))', ones(numel(label),1));
-    P = P./sum(P,2);
-
-    cfg             = [];
-    cfg.method      = 'mim';
-    cfg.indices     = i2(:);
-    mim{k}          = ft_connectivityanalysis(cfg, vccsd);
-
-    cfg             = [];
-    cfg.method      = 'coh';
-    cfg.complex     = 'absimag';
-    imcoh{k}        = ft_connectivityanalysis(cfg, vccsd);
-
-    coh{k}.cohspctrm   = P*coh{k}.cohspctrm*P';
-    imcoh{k}.cohspctrm = P*imcoh{k}.cohspctrm*P';
-    coh{k}.label       = ulabel;
-    imcoh{k}.label     = ulabel;
-    mim{k}.label       = ulabel; % for readability: check whether this is correct, i.e. that it doesn't mix up the labels
-    
-    % cfg appears to be huge and this is why it is deleted
-    coh{k}.cfg      = [];
-    imcoh{k}.cfg    = [];
-    mim{k}.cfg      = [];
 end
 
 
 %% Save variables
 
 if saveflag
-    fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
-    save(fname, 'coh', 'imcoh', 'mim', 'conlabel', '-v7.3');
+    switch method
+        case 'freqpower'
+            fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
+            save(fname, 'pow', 'conlabel', '-v7.3');
+        case 'freqconnect'
+            fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
+            save(fname, 'coh', 'imcoh', 'mim', 'conlabel', '-v7.3');
+    end
 end
 
 
