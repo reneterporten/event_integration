@@ -153,13 +153,25 @@ for i = 1:size(Fdata, 1)
         elseif strcmp(compsel, 'selection')
             % Select specific rows and put them into column vector
             %left/right HC to left mPFC
-            HC_leftmPFC = Fdata{i, j}.(fname)(6:9,1:5);
+            HC_leftmPFC = Fdata{i, j}.(fname)(6:9,1:5); % these numbers are hard coded for the ROIs
             label_leftmPFC = labelsel(6:9,1:5);
             %left/right HC to right mPFC
             HC_rightmPFC = Fdata{i, j}.(fname)(10:14,6:9);
             label_rightmPFC = labelsel(10:14,6:9);
             Fdata{i, j}.(fname)= [HC_leftmPFC(:); HC_rightmPFC(:)];
             Fdata{i, j}.complabel= [label_leftmPFC(:); label_rightmPFC(:)];
+        elseif strcmp(compsel, 'selection_avg')
+            % for now (because above it's also hardcoded), do the
+            % partitioning according to [(1:5) (6:7) (8:9) (10:14)]
+            P   = blkdiag(ones(1,5)./5,ones(1,2)./2,ones(1,2)./2,ones(1,5)./5);
+            tmp = Fdata{i, j}.(fname);
+            tmp = P*tmp*P';
+            tmp = tmp - diag(diag(tmp));
+            Fdata{i, j}.(fname) = squareform(tmp).';
+            Fdata{i, j}.dimord  = 'chan_freq';
+            Fdata{i, j}.label   = {'Hippl_MPFCl';'Hippr_MPFCl';'MPFCr_MPFCl';'Hippr_Hippl';'MPFCr_Hippl';'Hippr_MPFCr'};
+            Fdata{i, j}.complabel = []; % don't know what to do with this
+            
         end
     end
 end

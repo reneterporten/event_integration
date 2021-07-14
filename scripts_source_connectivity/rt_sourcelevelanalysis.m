@@ -61,6 +61,7 @@ cfg.dics.projectnoise   = 'yes';
 cfg.dics.lambda         = '20%';
 cfg.dics.keepfilter     = 'yes';
 cfg.dics.fixedori       = 'yes';
+cfg.dics.realfilter     = 'yes';
 cfg.dics.weightnorm     = 'unitnoisegain';
 
 source = ft_sourceanalysis(cfg, freqcsd);
@@ -77,6 +78,10 @@ cfg                 = [];
 cfg.parcellation    = 'tissue';
 cfg.method          = 'svd';
 cfg.numcomponent    = 5;
+
+% Create virtual channels on all conditions combined
+freq                = ft_virtualchannel(cfg, freq, source, atlas_grid); 
+
 % Create virtual channels from conditions
 switch comp
     case 'prepost'  
@@ -87,7 +92,7 @@ switch comp
             cfgsel          = [];
             cfgsel.trials   = find(freq.trialinfo(:,5)==conditions(c));
             freqsel         = ft_selectdata(cfgsel, freq);
-            vc{c}           = ft_virtualchannel(cfg, freqsel, source, atlas_grid);
+            vc{c}           = freqsel;%ft_virtualchannel(cfg, freqsel, source, atlas_grid);
         end   
     case 'abxprepost'
         conditions  = [1 2 3 5 6 7]; % a b x (pre), a b x (post)
@@ -97,7 +102,7 @@ switch comp
             cfgsel          = [];
             cfgsel.trials   = find(freq.trialinfo(:,2)==conditions(c));
             freqsel         = ft_selectdata(cfgsel, freq);
-            vc{c}           = ft_virtualchannel(cfg, freqsel, source, atlas_grid);
+            vc{c}           = freqsel;%ft_virtualchannel(cfg, freqsel, source, atlas_grid);
         end 
 end
 
@@ -161,6 +166,12 @@ for k = 1:numel(vc)
             coh{k}.cfg      = [];
             imcoh{k}.cfg    = [];
             mim{k}.cfg      = [];
+            if k>1
+              coh{k}.grad   = [];
+              imcoh{k}.grad = [];
+              mim{k}.grad   = [];
+            end
+            
     end
 end
 
@@ -171,10 +182,10 @@ if saveflag
     switch method
         case 'freqpower'
             fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
-            save(fname, 'pow', 'conlabel', '-v7.3');
+            save(fname, 'pow', 'conlabel');
         case 'freqconnect'
             fname = fullfile(savepath, sprintf('%s_%s', subj, savename));
-            save(fname, 'coh', 'imcoh', 'mim', 'conlabel', '-v7.3');
+            save(fname, 'coh', 'imcoh', 'mim', 'conlabel');
     end
 end
 

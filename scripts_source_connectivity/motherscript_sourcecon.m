@@ -48,9 +48,10 @@ end
 
 for subj = 1:length(subjects)
     
-    disp(strcat('Subject sourceanalysis:', int2str(subj)))
-    rt_sourcelevelanalysis(subjects{subj}, 'saveflag', true)
-    disp(strcat('Subject sourceanalysis done:', int2str(subj)))
+    %disp(strcat('Subject sourceanalysis:', int2str(subj)))
+    %rt_sourcelevelanalysis(subjects{subj}, 'saveflag', true);    
+    %disp(strcat('Subject sourceanalysis done:', int2str(subj)))
+    qsubfeval('rt_sourcelevelanalysis', subjects{subj}, 'saveflag', true, 'memreq', 8*1024^3, 'timreq', 30*60, 'batchid', subjects{subj});
     
 end
 
@@ -59,9 +60,10 @@ end
 
 for subj = 1:length(subjects)
     
-    disp(strcat('Subject sourceanalysis:', int2str(subj)))
-    rt_sourcelevelanalysis(subjects{subj}, 'saveflag', true, 'method', 'freqpower', 'savename', 'pow')
-    disp(strcat('Subject sourceanalysis done:', int2str(subj)))
+    %disp(strcat('Subject sourceanalysis:', int2str(subj)))
+    %rt_sourcelevelanalysis(subjects{subj}, 'saveflag', true, 'method', 'freqpower', 'savename', 'pow')
+    %disp(strcat('Subject sourceanalysis done:', int2str(subj)))
+    qsubfeval('rt_sourcelevelanalysis', subjects{subj}, 'saveflag', true, 'method', 'freqpower', 'savename', 'pow', 'memreq', 8*1024^3, 'timreq', 30*60, 'batchid', subjects{subj});
     
 end
 
@@ -82,41 +84,82 @@ rt_collectsourcedata('saveflag', true, 'connectivity', 'pow', 'suff', '_pow.mat'
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
 %rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstats', 'method', 'stat', 'atlasrois', roi_names 'compsel', 'all')
-rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'imcoh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names, 'compsel', 'all')
-%rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'imcoh', 'savename', 'cohstatsMCsel', 'method', 'stat', 'atlasrois', roi_names)
+rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMC', 'method', 'stat', 'atlasrois', roi_names, 'compsel', 'all')
+rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh', 'savename', 'cohstatsMCsel', 'method', 'stat', 'atlasrois', roi_names, 'compsel', 'selection_avg')
 
 
 %% Visualize stats
 
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_cohstatsMC.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_mim_cohstatsMC.mat'))
 FconMC = Fcon;
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_cohstatsMCsel.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_mim_cohstatsMCsel.mat'))
 FconMCsel = Fcon;
 clear Fcon
 
-Stats   = ones(FconMC{1,1}.orgdim);
-triang  = tril(Stats,-1);
-Stats   = zeros(FconMC{1,1}.orgdim);
-Probs   = zeros(FconMC{1,1}.orgdim);
-Stats(triang>0) = FconMC{3,1}.stat;
-Stats = Stats+Stats';
+atlasfile = fullfile('/project/3012026.13/jansch/brainnetome_atlas_grid');
+load(atlasfile);
 
-Probs(triang>0) = FconMC{3,1}.prob;
-Probs = Probs+Probs';
-Probsmasked = Probs;
-Probsmasked(Probs > 0.05) = 1;
+lab = atlas_grid.tissuelabel(FconMC{1}.roiselection); % this is probably OK
+for k = 1:numel(lab)
+  tok = strsplit(lab{k},',');
+  tmp = strsplit(tok{2});
+  tok{2} = tmp{2};
+  tok{3} = strrep(strtrim(tok{3}),' ','_');
+  
+  lab{k} = sprintf('%s_%s_%s',tok{2},tok{1},tok{3});
+end
 
-%Label structure as reference
-labelmat = cell(FconMC{1,1}.orgdim);
-labelmat(triang>0)=FconMC{1,1}.complabel;
+% Label structure as reference
+labelmat = cell(FconMC{icontrast,1}.orgdim);
+labelmat(triang>0)=FconMC{icontrast,1}.complabel;
 
-imagesc(Stats)
+% specification of a set of lines
+L = [0.5 14.5 5.5 5.5;
+  0.5 14.5 7.5 7.5;
+  0.5 14.5 9.5 9.5;
+  5.5 5.5 0.5 14.5;
+  7.5 7.5 0.5 14.5;
+  9.5 9.5 0.5 14.5];
+  
+ 
+set(groot, 'DefaultAxesTickLabelInterpreter', 'none');
+clips = {'A' 'B' 'X'};
+for icontrast = 1:3
+  Stats   = ones(FconMC{icontrast,1}.orgdim);
+  triang  = tril(Stats,-1);
+  Stats   = zeros(FconMC{icontrast,1}.orgdim);
+  Probs   = zeros(FconMC{icontrast,1}.orgdim);
+  Stats(triang>0) = FconMC{icontrast,1}.stat;
+  Stats = Stats+Stats';
+  
+  Probs(triang>0) = FconMC{icontrast,1}.prob;
+  Probs = Probs+Probs';
+  Probs = Probs + eye(size(Probs,1))./2; % not sure whether this should be 1 or 0.5 added to the diagonal. It's not really relevant though
+  Probsmasked = Probs;
+  Probsmasked(Probs > 0.05) = 1;
+  Probsmasked = Probsmasked - diag(diag(Probsmasked)) + eye(size(Probsmasked,1));
+   
+  figure;
+  imagesc(Stats);axis equal;axis tight;colorbar(gca,'NorthOutside');
+  hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
+  set(gca, 'ytick', 1:14, 'yticklabel', lab);
+  title(sprintf('%sPre-%sPost T-statistic', clips{icontrast}, clips{icontrast}));
+  figure;
+  imagesc(Probs);axis equal;axis tight;colorbar(gca,'NorthOutside');
+  hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
+  set(gca, 'ytick', 1:14, 'yticklabel', lab);
+  title(sprintf('%sPre-%sPost, p-value', clips{icontrast}, clips{icontrast}));
+  figure;
+  imagesc(Probsmasked);axis equal;axis tight
+  hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
+  set(gca, 'ytick', 1:14, 'yticklabel', lab);
+  title(sprintf('%sPre-%sPost, mask', clips{icontrast}, clips{icontrast}));
+end
+
+
+% Create bar plot of selected comparisons -> JM does not find this really
+% useful
 figure;
-imagesc(Probs)
-figure;
-imagesc(Probsmasked)
-
-% Create bar plot of selected comparisons
 barh(FconMCsel{1,1}.stat)
 yticks([1:1:numel(FconMCsel{1,1}.stat)])
 figure;
