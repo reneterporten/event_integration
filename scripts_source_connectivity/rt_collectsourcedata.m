@@ -11,7 +11,7 @@ connectivity    = ft_getopt(varargin, 'connectivity', 'coh');
 atlasgrid       = ft_getopt(varargin, 'headdata', fullfile('/project/3012026.13/jansch/', 'brainnetome_atlas_grid.mat'));
 atlasrois       = ft_getopt(varargin, 'atlasrois', {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'}); % Either 'all' or cell array with ROIs
 method          = ft_getopt(varargin, 'method', 'avg'); % can also be 'stat'
-compsel         = ft_getopt(varargin, 'compsel', 'selection'); % can be 'all'
+compsel         = ft_getopt(varargin, 'compsel', 'selection'); 
 
 cd(datadir);
 load(atlasgrid)

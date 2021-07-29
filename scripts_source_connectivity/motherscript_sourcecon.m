@@ -90,9 +90,9 @@ rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh'
 
 %% Visualize stats
 
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_mim_cohstatsMC.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMC.mat'))
 FconMC = Fcon;
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_mim_cohstatsMCsel.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMCsel.mat'))
 FconMCsel = Fcon;
 clear Fcon
 
@@ -110,8 +110,8 @@ for k = 1:numel(lab)
 end
 
 % Label structure as reference
-labelmat = cell(FconMC{icontrast,1}.orgdim);
-labelmat(triang>0)=FconMC{icontrast,1}.complabel;
+%labelmat = cell(FconMC{1,1}.orgdim);
+%labelmat(triang>0)=FconMC{1,1}.complabel;
 
 % specification of a set of lines
 L = [0.5 14.5 5.5 5.5;
@@ -125,35 +125,35 @@ L = [0.5 14.5 5.5 5.5;
 set(groot, 'DefaultAxesTickLabelInterpreter', 'none');
 clips = {'A' 'B' 'X'};
 for icontrast = 1:3
-  Stats   = ones(FconMC{icontrast,1}.orgdim);
-  triang  = tril(Stats,-1);
-  Stats   = zeros(FconMC{icontrast,1}.orgdim);
-  Probs   = zeros(FconMC{icontrast,1}.orgdim);
-  Stats(triang>0) = FconMC{icontrast,1}.stat;
-  Stats = Stats+Stats';
-  
-  Probs(triang>0) = FconMC{icontrast,1}.prob;
-  Probs = Probs+Probs';
-  Probs = Probs + eye(size(Probs,1))./2; % not sure whether this should be 1 or 0.5 added to the diagonal. It's not really relevant though
-  Probsmasked = Probs;
-  Probsmasked(Probs > 0.05) = 1;
-  Probsmasked = Probsmasked - diag(diag(Probsmasked)) + eye(size(Probsmasked,1));
-   
-  figure;
-  imagesc(Stats);axis equal;axis tight;colorbar(gca,'NorthOutside');
-  hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
-  set(gca, 'ytick', 1:14, 'yticklabel', lab);
-  title(sprintf('%sPre-%sPost T-statistic', clips{icontrast}, clips{icontrast}));
-  figure;
-  imagesc(Probs);axis equal;axis tight;colorbar(gca,'NorthOutside');
-  hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
-  set(gca, 'ytick', 1:14, 'yticklabel', lab);
-  title(sprintf('%sPre-%sPost, p-value', clips{icontrast}, clips{icontrast}));
-  figure;
-  imagesc(Probsmasked);axis equal;axis tight
-  hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
-  set(gca, 'ytick', 1:14, 'yticklabel', lab);
-  title(sprintf('%sPre-%sPost, mask', clips{icontrast}, clips{icontrast}));
+    Stats   = ones(FconMC{icontrast,1}.orgdim);
+    triang  = tril(Stats,-1);
+    Stats   = zeros(FconMC{icontrast,1}.orgdim);
+    Probs   = zeros(FconMC{icontrast,1}.orgdim);
+    Stats(triang>0) = FconMC{icontrast,1}.stat;
+    Stats = Stats+Stats';
+
+    Probs(triang>0) = FconMC{icontrast,1}.prob;
+    Probs = Probs+Probs';
+    Probs = Probs + eye(size(Probs,1))./2; % not sure whether this should be 1 or 0.5 added to the diagonal. It's not really relevant though
+    Probsmasked = Probs;
+    Probsmasked(Probs > 0.05) = 1;
+    Probsmasked = Probsmasked - diag(diag(Probsmasked)) + eye(size(Probsmasked,1));
+
+    figure;
+    imagesc(Stats);axis equal;axis tight;colorbar(gca,'NorthOutside');
+    hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
+    set(gca, 'ytick', 1:14, 'yticklabel', lab);
+    title(sprintf('%sPre-%sPost T-statistic', clips{icontrast}, clips{icontrast}));
+    figure;
+    imagesc(Probs);axis equal;axis tight;colorbar(gca,'NorthOutside');
+    hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
+    set(gca, 'ytick', 1:14, 'yticklabel', lab);
+    title(sprintf('%sPre-%sPost, p-value', clips{icontrast}, clips{icontrast}));
+    figure;
+    imagesc(Probsmasked);axis equal;axis tight
+    hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
+    set(gca, 'ytick', 1:14, 'yticklabel', lab);
+    title(sprintf('%sPre-%sPost, mask', clips{icontrast}, clips{icontrast}));
 end
 
 
