@@ -4,7 +4,7 @@ function rt_corrbehav(varargin)
 
 saveflag    = ft_getopt(varargin, 'saveflag', false);
 savepath    = ft_getopt(varargin, 'savepath', '/project/3012026.13/jansch/');
-datadir     = ft_getopt(varargin, 'datadir', '/project/3012026.13/logfiles/MEG/');
+datadir     = ft_getopt(varargin, 'datadir', '/project/3012026.13/logfiles/Relatedness/');
 savename    = ft_getopt(varargin, 'savename', 'coherence'); 
 suff        = ft_getopt(varargin, 'suff', 'Relatedness_answers.txt1');
 suffcoh     = ft_getopt(varargin, 'suffcoh', 'coh.mat');
@@ -25,8 +25,13 @@ for k = 1:numel(d)
     behav_pre   = behav_data(pre_idx,:);
     behav_post  = behav_data(post_idx,:);
     for paircount = 1:size(pairs, 1)
-        pre_comp(paircount,k)  = mean(behav_pre(ismember(behav_pre(:,3), pairs(paircount, :)), 6));
-        post_comp(paircount,k) = mean(behav_post(ismember(behav_post(:,3), pairs(paircount, :)), 6));
+        pre_comp(k,paircount)  = mean(behav_pre(ismember(behav_pre(:,3), pairs(paircount, :)), 6));
+        post_comp(k,paircount) = mean(behav_post(ismember(behav_post(:,3), pairs(paircount, :)), 6));
+    end
+    % Resort relatedness data for odd subjects as B-X switches
+    if mod(str2double(extractBetween(d(k).name,'sub','_Relatedness')), 2) % in case of odd subject
+        pre_comp(k,:) = pre_comp(k,[2, 1, 3]);
+        post_comp(k,:) = post_comp(k,[2, 1, 3]);
     end
 end
 
@@ -53,34 +58,41 @@ end
 
 % Average coherence data to create pairs comparable to behavioral data
 for subs = 1:size(coh_data,1)
-    for cond = 1:size(coh_data,2)
-        coh_pairs{subs, cond} = coh_data{subs,cond};
-    end
-    % Change this into collapsing conditions into one 6x1 fields as is the
-    % behavioral data
+    coh_pairs{subs, 1} = coh_data{subs, 1};
+    coh_pairs{subs, 1}.cohpairs = zeros(6,6);
     % Pre
-    coh_pairs{subs, 1}.cohspctrm = (coh_data{subs,1}.cohspctrm + coh_data{subs,2}.cohspctrm)/2; % AB
-    coh_pairs{subs, 2}.cohspctrm = (coh_data{subs,1}.cohspctrm + coh_data{subs,3}.cohspctrm)/2; % AX
-    coh_pairs{subs, 3}.cohspctrm = (coh_data{subs,2}.cohspctrm + coh_data{subs,3}.cohspctrm)/2; % BX
+    coh_pairs{subs, 1}.cohpairs(:,1) = (coh_data{subs,1}.cohspctrm + coh_data{subs,2}.cohspctrm)/2; % AB
+    coh_pairs{subs, 1}.cohpairs(:,2) = (coh_data{subs,1}.cohspctrm + coh_data{subs,3}.cohspctrm)/2; % AX
+    coh_pairs{subs, 1}.cohpairs(:,3) = (coh_data{subs,2}.cohspctrm + coh_data{subs,3}.cohspctrm)/2; % BX
     % Post
-    coh_pairs{subs, 4}.cohspctrm = (coh_data{subs,4}.cohspctrm + coh_data{subs,5}.cohspctrm)/2; % AB
-    coh_pairs{subs, 5}.cohspctrm = (coh_data{subs,4}.cohspctrm + coh_data{subs,6}.cohspctrm)/2; % AX
-    coh_pairs{subs, 6}.cohspctrm = (coh_data{subs,5}.cohspctrm + coh_data{subs,6}.cohspctrm)/2; % BX
-    for cond = 1:size(coh_data,2)
-        coh_pairs{subs, cond}.cohspctrm_left = coh_pairs{subs, cond}.cohspctrm(1,1); % Hippl_MPFCl
-        coh_pairs{subs, cond}.cohspctrm_right = coh_pairs{subs, cond}.cohspctrm(6,1); % Hippr_MPFCr
-        coh_pairs{subs, cond}.relatedness = [pre_comp(:, subs); post_comp(:, subs)];
-    end
+    coh_pairs{subs, 1}.cohpairs(:,4) = (coh_data{subs,4}.cohspctrm + coh_data{subs,5}.cohspctrm)/2; % AB
+    coh_pairs{subs, 1}.cohpairs(:,5) = (coh_data{subs,4}.cohspctrm + coh_data{subs,6}.cohspctrm)/2; % AX
+    coh_pairs{subs, 1}.cohpairs(:,6) = (coh_data{subs,5}.cohspctrm + coh_data{subs,6}.cohspctrm)/2; % BX
+
+    coh_pairs{subs, 1}.relatedness = [pre_comp(subs,:), post_comp(subs,:)];
+    coh_pairs{subs, 1}.pair_dimord = 'chan_pair';
+    coh_pairs{subs, 1}.pairlabel = {'AB_pre', 'AX_pre', 'BX_pre', 'AB_post', 'AX_post', 'BX_post' };
 end
 
 % Correlate relatedness with coherence across subjects
+current_data_matrix = [];
+for chan = 1:size(coh_pairs{1,1}.cohpairs, 1)
+    for subs = 1:size(coh_pairs,1)
+        current_data_matrix = [current_data_matrix; coh_pairs{subs,1}.cohpairs(chan,:), coh_pairs{subs,1}.relatedness];
+    end
+    data_matrix{chan,1} = current_data_matrix;
+    current_data_matrix = [];
+end
 
-% To-Do
-
-
-
+corr_matrix = zeros(6,6);
+for chan = 1:6
+    for pair = 1:6
+        corr_matrix(chan,pair) = corr(data_matrix{chan}(:,pair), data_matrix{chan}(:,pair+6));
+    end
+end
 
 disp('hi')
+
 
 
 
