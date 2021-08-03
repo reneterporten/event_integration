@@ -90,9 +90,9 @@ rt_collectsourcedata('suff', '_coh.mat', 'saveflag', true, 'connectivity', 'coh'
 
 %% Visualize stats
 
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMC.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_cohstatsMC.mat'))
 FconMC = Fcon;
-load(fullfile('/project/3012026.13/jansch/', 'groupdata_coh_cohstatsMCsel.mat'))
+load(fullfile('/project/3012026.13/jansch/', 'groupdata_imcoh_cohstatsMCsel.mat'))
 FconMCsel = Fcon;
 clear Fcon
 
@@ -144,16 +144,19 @@ for icontrast = 1:3
     hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
     set(gca, 'ytick', 1:14, 'yticklabel', lab);
     title(sprintf('%sPre-%sPost T-statistic', clips{icontrast}, clips{icontrast}));
+    set(gcf,'color','w');
     figure;
     imagesc(Probs);axis equal;axis tight;colorbar(gca,'NorthOutside');
     hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
     set(gca, 'ytick', 1:14, 'yticklabel', lab);
     title(sprintf('%sPre-%sPost, p-value', clips{icontrast}, clips{icontrast}));
+    set(gcf,'color','w');
     figure;
     imagesc(Probsmasked);axis equal;axis tight
     hold on; for k = 1:size(L,1), plot(L(k,1:2), L(k,3:4), 'w', 'linewidth', 2); end
     set(gca, 'ytick', 1:14, 'yticklabel', lab);
     title(sprintf('%sPre-%sPost, mask', clips{icontrast}, clips{icontrast}));
+    set(gcf,'color','w');
 end
 
 
@@ -174,12 +177,21 @@ for i = 1:length(FconMCsel{1,1}.complabel)
     disp(flippedlabels{i})
 end
 
+%% Visualize behavior correlation
+
+imagesc(corr_matrix);
+axis equal;axis tight;
+set(gca, 'ytick', 1:6, 'yticklabel', coh_pairs{1}.label);
+set(gca, 'xtick', 1:6, 'xticklabel', coh_pairs{1}.pairlabel);
+set(gcf,'color','w');
+colorbar(gca,'NorthOutside');
+title('Correlation Coherence - Relatedness')
 
 %% Plot ROIs of atlas
 
 roi_names = {'A10m', 'A11m', 'A13', 'A14m', 'A32sg', 'Hipp'};
 rt_visualizeroi('atlasrois', roi_names, 'plotmethod', 'ortho')
-rt_visualizeroi('atlasrois', 'all', 'plotmethod', 'slice')
+%rt_visualizeroi('atlasrois', 'all', 'plotmethod', 'slice')
 
 
 %% Plot coherence pre vs post, HC & mPFC

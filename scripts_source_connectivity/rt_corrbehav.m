@@ -1,4 +1,4 @@
-function rt_corrbehav(varargin)
+function [corr_matrix, coh_pairs] = rt_corrbehav(varargin)
 
 % Function to correlate behavioral relatedness ratings with imaging data
 
@@ -28,6 +28,7 @@ for k = 1:numel(d)
         pre_comp(k,paircount)  = mean(behav_pre(ismember(behav_pre(:,3), pairs(paircount, :)), 6));
         post_comp(k,paircount) = mean(behav_post(ismember(behav_post(:,3), pairs(paircount, :)), 6));
     end
+    story_valid{k,1} = validate_story(behav_pre, behav_post);
     % Resort relatedness data for odd subjects as B-X switches
     if mod(str2double(extractBetween(d(k).name,'sub','_Relatedness')), 2) % in case of odd subject
         pre_comp(k,:) = pre_comp(k,[2, 1, 3]);
@@ -90,13 +91,43 @@ for chan = 1:6
         corr_matrix(chan,pair) = corr(data_matrix{chan}(:,pair), data_matrix{chan}(:,pair+6));
     end
 end
-
-disp('hi')
+disp('done')
 
 
 
 
 %% -------------------------- SUB FUNCTIONS -------------------------- %%
+
+function [story_valid] = validate_story(behav_pre, behav_post)
+% Function to check whether linked events increase and unlinked events
+% decrease in relatedness per story
+story_valid = [];
+story_valid.diff = zeros(length(unique(behav_pre(:,1))), 3);
+story_valid.coding = zeros(length(unique(behav_pre(:,1))), 3);
+for stor = 1:length(unique(behav_pre(:,1)))
+    cur_pre     = behav_pre(behav_pre(:,1)==stor,:);
+    cur_post    = behav_post(behav_post(:,1)==stor,:);
+    link_pre    = cur_pre(:,4) == 1;
+    link_post   = cur_post(:,4) == 1;
+    link_diff   = mean(cur_pre(link_pre,6))-mean(cur_post(link_post,6));
+    unlink_diff = mean(cur_pre(~link_pre,6))-mean(cur_post(~link_post,6));
+    story_valid.diff(stor,:) = [stor, link_diff, unlink_diff];
+    link_diff_code = 0;
+    unlink_diff_code = 0;
+    if link_diff > 0
+        link_diff_code = -1;
+    elseif link_diff < 0
+        link_diff_code = 1;
+    end
+    if unlink_diff > 0
+        unlink_diff_code = 1;
+    elseif unlink_diff < 0
+        unlink_diff_code = -1;
+    end
+    story_valid.coding(stor,:) = [stor, link_diff_code, unlink_diff_code];
+end
+
+
 
 function [sorted_idx] = get_sortedrois(datalabels, atlasrois)
 
